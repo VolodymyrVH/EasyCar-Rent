@@ -1,6 +1,7 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 
-from core.database import engine, Base
+from core.database import init_db
 
 from models.users import *
 from models.cars import *
@@ -8,11 +9,12 @@ from models.rentals import *
 from models.payments import *
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
 
-
-Base.metadata.create_all(bind=engine)
-
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def read_root():
