@@ -1,4 +1,5 @@
-import { Logo } from '../components/Logo';
+import { Logo } from '../../components/Logo';
+import './Register.css';
 
 export const Register = () => {
   return (
