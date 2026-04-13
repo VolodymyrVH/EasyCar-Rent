@@ -1,7 +1,4 @@
-from sqlalchemy import (
-    Column, Integer, String, Enum, Date, TIMESTAMP,
-    func, CheckConstraint, UniqueConstraint
-)
+from sqlalchemy import Column, Integer, String, Enum, Date, TIMESTAMP, func, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
 
