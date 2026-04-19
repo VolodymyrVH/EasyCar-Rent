@@ -9,8 +9,11 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from models.users import User
 from core.database import get_db
+from dotenv import load_dotenv
 
-SECRET_KEY = os.getenv("SECRET_KEY")#make later
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-key")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

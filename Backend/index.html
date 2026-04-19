@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Users</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; max-width: 520px; margin: 40px auto; padding: 0 1rem; }
+    .section { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem; }
+    .section-title { font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    label { font-size: 13px; color: #666; }
+    input { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    button { width: 100%; padding: 9px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; margin-top: 6px; }
+    button:hover { background: #f5f5f5; }
+    button:active { transform: scale(0.98); }
+    button.danger { border-color: #e74c3c; color: #e74c3c; }
+    button.danger:hover { background: #fdecea; }
+    .msg { margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 13px; display: none; word-break: break-all; white-space: pre-wrap; }
+    .success { background: #e6f4ea; color: #2d7a3a; display: block !important; }
+    .error { background: #fdecea; color: #c0392b; display: block !important; }
+    .token-display { font-size: 11px; color: #888; word-break: break-all; margin-top: 6px; background: #f5f5f5; padding: 6px 8px; border-radius: 4px; display: none; }
+  </style>
+</head>
+<body>
+
+  <!--
+  Base URL:    http://localhost:8000
+  Документація: http://localhost:8000/docs
+
+  АВТОРИЗАЦІЯ:
+    В базі наче є вже користовач Джон. Всі дані знайдете в тхт якому я вам надішлю.
+    - Спочатку зроби логін (секція 2) — отримаєш access_token
+    - Додавай токен до кожного захищеного запиту:
+      Headers: { Authorization: "Bearer <token>" }
+    - Токен діє 30 хвилин, після — логінься знову
+    Я
+    кщо є питання, звертайстеся до мене по тг. 
+
+  ЕНДПОІНТИ:
+    POST   /users/               реєстрація         (токен не потрібен)
+    POST   /auth/token           логін              (токен не потрібен)
+    GET    /users/               всі юзери          (тільки ADMIN)
+    GET    /users/{id}           юзер по ID         (ADMIN або свій)
+    GET    /users/email/{email}  юзер по email      (тільки ADMIN)
+    GET    /users/phone/{phone}  юзер по телефону   (тільки ADMIN)
+    PATCH  /users/{id}           оновлення          (ADMIN або свій)
+    DELETE /users/{id}           видалення          (ADMIN або свій)
+
+  GET ЗАПИТИ:
+    Всі GET передають токен тільки в заголовку, тіло порожнє:
+      fetch('/users/1', { headers: { Authorization: 'Bearer ' + token } })
+
+    Список з пагінацією:
+      fetch('/users/?skip=0&limit=100', { headers: ... })
+
+  КОДИ ВІДПОВІДЕЙ:
+    200 — успіх
+    204 — успіх, порожня відповідь (DELETE)
+    400 — email або телефон вже існує
+    401 — немає або невалідний токен
+    403 — немає прав (не адмін і не свій профіль)
+    404 — юзера не знайдено
+    422 — невалідні дані (перевір поля)
+
+  ФОРМАТ ЮЗЕРА У ВІДПОВІДІ:
+    {
+      "id": 1,
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john@example.com",
+      "phone_number": "0991234567",
+      "role": "USER",
+      "license_series": "AB",
+      "license_number": "123456",
+      "dob": "2000-10-10",
+      "created_at": "2024-01-01T00:00:00",
+      "updated_at": "2024-01-01T00:00:00"
+    }
+  -->
+
+  <!-- POST /users/ — без токена, Content-Type: application/json -->
+  <div class="section">
+    <div class="section-title">1. Реєстрація</div>
+    <div class="row">
+      <div class="field"><label>Ім'я</label><input type="text" id="reg_first_name" placeholder="John" /></div>
+      <div class="field"><label>Прізвище</label><input type="text" id="reg_last_name" placeholder="Doe" /></div>
+    </div>
+    <div class="field"><label>Email</label><input type="email" id="reg_email" placeholder="john@example.com" /></div>
+    <div class="field"><label>Телефон</label><input type="text" id="reg_phone" placeholder="0991234567" /></div>
+    <div class="field"><label>Пароль</label><input type="password" id="reg_password" placeholder="мін. 8 символів" /></div>
+    <div class="row">
+      <div class="field"><label>Серія прав</label><input type="text" id="reg_license_series" placeholder="AB" maxlength="3" /></div>
+      <div class="field"><label>Номер прав</label><input type="text" id="reg_license_number" placeholder="123456" maxlength="6" /></div>
+    </div>
+    <div class="field"><label>Дата народження</label><input type="date" id="reg_dob" /></div>
+    <button onclick="register()">Зареєструвати</button>
+    <div class="msg" id="reg_msg"></div>
+  </div>
+
+  <!-- POST /auth/token — ВАЖЛИВО: Content-Type: application/x-www-form-urlencoded, не JSON
+       Поле "username" = email (так вимагає OAuth2 стандарт)
+       Повертає: { access_token, token_type: "bearer" } -->
+  <div class="section">
+    <div class="section-title">2. Логін</div>
+    <div class="field"><label>Email</label><input type="email" id="login_email" placeholder="john@example.com" /></div>
+    <div class="field"><label>Пароль</label><input type="password" id="login_password" placeholder="пароль" /></div>
+    <button onclick="login()">Увійти</button>
+    <div class="token-display" id="token_display"></div>
+    <div class="msg" id="login_msg"></div>
+  </div>
+
+  <!-- GET /users/{id} — токен в заголовку, тіло не потрібне
+       Щоб отримати всіх: GET /users/?skip=0&limit=100 -->
+  <div class="section">
+    <div class="section-title">3. Отримати юзера по ID</div>
+    <div class="field"><label>User ID</label><input type="number" id="get_id" placeholder="1" /></div>
+    <button onclick="getUser()">Отримати</button>
+    <div class="msg" id="get_msg"></div>
+  </div>
+
+  <!-- PATCH /users/{id} — передавай тільки поля які змінились
+       Наприклад: { "first_name": "Jane" } — решта не зміниться -->
+  <div class="section">
+    <div class="section-title">4. Оновити юзера</div>
+    <div class="field"><label>User ID</label><input type="number" id="update_id" placeholder="1" /></div>
+    <div class="row">
+      <div class="field"><label>Ім'я</label><input type="text" id="update_first_name" placeholder="(необов'язково)" /></div>
+      <div class="field"><label>Прізвище</label><input type="text" id="update_last_name" placeholder="(необов'язково)" /></div>
+    </div>
+    <div class="field"><label>Email</label><input type="email" id="update_email" placeholder="(необов'язково)" /></div>
+    <div class="field"><label>Телефон</label><input type="text" id="update_phone" placeholder="(необов'язково)" /></div>
+    <div class="field"><label>Новий пароль</label><input type="password" id="update_password" placeholder="(необов'язково)" /></div>
+    <button onclick="updateUser()">Оновити</button>
+    <div class="msg" id="update_msg"></div>
+  </div>
+
+  <!-- DELETE /users/{id} — повертає 204 No Content (порожня відповідь — це норма, не помилка) -->
+  <div class="section">
+    <div class="section-title">5. Видалити юзера</div>
+    <div class="field"><label>User ID</label><input type="number" id="delete_id" placeholder="1" /></div>
+    <button class="danger" onclick="deleteUser()">Видалити</button>
+    <div class="msg" id="delete_msg"></div>
+  </div>
+
+  <script>
+    const BASE = 'http://localhost:8000';
+
+    // зберігаємо токен після логіну
+    // у реальному проєкті: localStorage.setItem('token', value)
+    let token = '';
+
+    // хелпер для заголовків — додає токен якщо є
+    function getHeaders() {
+      return {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+      };
+    }
+
+    function showMsg(id, text, isError) {
+      const el = document.getElementById(id);
+      el.className = 'msg ' + (isError ? 'error' : 'success');
+      el.textContent = text;
+    }
+
+    // POST /users/
+    async function register() {
+      const body = {
+        first_name: document.getElementById('reg_first_name').value,
+        last_name: document.getElementById('reg_last_name').value,
+        email: document.getElementById('reg_email').value,
+        phone_number: document.getElementById('reg_phone').value,
+        password: document.getElementById('reg_password').value,
+        license_series: document.getElementById('reg_license_series').value,
+        license_number: document.getElementById('reg_license_number').value,
+        dob: document.getElementById('reg_dob').value,
+      };
+      try {
+        const res = await fetch(BASE + '/users/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) showMsg('reg_msg', 'Зареєстровано! ID: ' + data.id + ' | ' + data.email, false);
+        else showMsg('reg_msg', 'Помилка: ' + JSON.stringify(data.detail), true);
+      } catch (e) {
+        showMsg('reg_msg', 'Не вдалось підключитись', true);
+      }
+    }
+
+    // POST /auth/token
+    async function login() {
+      const email = document.getElementById('login_email').value;
+      const password = document.getElementById('login_password').value;
+      try {
+        const res = await fetch(BASE + '/auth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'username=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(password)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          token = data.access_token;
+          showMsg('login_msg', 'Токен отримано!', false);
+          const td = document.getElementById('token_display');
+          td.textContent = token;
+          td.style.display = 'block';
+        } else {
+          showMsg('login_msg', 'Помилка: ' + JSON.stringify(data.detail), true);
+        }
+      } catch (e) {
+        showMsg('login_msg', 'Не вдалось підключитись', true);
+      }
+    }
+
+    // GET /users/{id}
+    // Щоб отримати всіх юзерів (тільки ADMIN):
+    //   fetch(BASE + '/users/?skip=0&limit=100', { headers: getHeaders() })
+    async function getUser() {
+      const id = document.getElementById('get_id').value;
+      try {
+        const res = await fetch(BASE + '/users/' + id, { headers: getHeaders() });
+        const data = await res.json();
+        if (res.ok) showMsg('get_msg', JSON.stringify(data, null, 2), false);
+        else showMsg('get_msg', 'Помилка: ' + JSON.stringify(data.detail), true);
+      } catch (e) {
+        showMsg('get_msg', 'Не вдалось підключитись', true);
+      }
+    }
+
+    // PATCH /users/{id}
+    // передаємо тільки змінені поля
+    async function updateUser() {
+      const id = document.getElementById('update_id').value;
+      const body = {};
+      const fn = document.getElementById('update_first_name').value;
+      const ln = document.getElementById('update_last_name').value;
+      const em = document.getElementById('update_email').value;
+      const ph = document.getElementById('update_phone').value;
+      const pw = document.getElementById('update_password').value;
+      if (fn) body.first_name = fn;
+      if (ln) body.last_name = ln;
+      if (em) body.email = em;
+      if (ph) body.phone_number = ph;
+      if (pw) body.password = pw;
+      try {
+        const res = await fetch(BASE + '/users/' + id, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) showMsg('update_msg', 'Оновлено! ' + data.first_name + ' ' + data.last_name, false);
+        else showMsg('update_msg', 'Помилка: ' + JSON.stringify(data.detail), true);
+      } catch (e) {
+        showMsg('update_msg', 'Не вдалось підключитись', true);
+      }
+    }
+
+    // DELETE /users/{id}
+    // відповідь 204 = успіх, тіло порожнє — не намагайся робити res.json()
+    async function deleteUser() {
+      const id = document.getElementById('delete_id').value;
+      if (!confirm('Видалити юзера #' + id + '?')) return;
+      try {
+        const res = await fetch(BASE + '/users/' + id, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+        if (res.status === 204) showMsg('delete_msg', 'Юзера #' + id + ' видалено', false);
+        else {
+          const data = await res.json();
+          showMsg('delete_msg', 'Помилка: ' + JSON.stringify(data.detail), true);
+        }
+      } catch (e) {
+        showMsg('delete_msg', 'Не вдалось підключитись', true);
+      }
+    }
+  </script>
+</body>
+</html>
