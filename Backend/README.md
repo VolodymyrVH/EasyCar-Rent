@@ -5,8 +5,11 @@ Before work add secret key in .env (you will get a .txt from me)
 AFTER WORK PLEASE REMOVE THE KEY FROM .env OR THE WORLD WILL EXPLODE
 
 For start we need to start the server
+
 ..\EasyCar\EasyCar-Rent>: cd Backend
+
 ..\EasyCar\EasyCar-Rent\Backend> uvicorn main:app --reload
+
 INFO:     Will watch for changes in these directories: ['C:..\\EasyCar\\EasyCar-Rent\\Backend']
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
 INFO:     Started reloader process [16324] using WatchFiles
