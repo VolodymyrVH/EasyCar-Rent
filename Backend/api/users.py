@@ -87,6 +87,7 @@ def update_user(user_id: int, user_update: UserUpdateSchema, db: Session = Depen
 
     db.commit()
     db.refresh(user_db)
+    
     return user_db
 
 
