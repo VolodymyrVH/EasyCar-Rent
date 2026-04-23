@@ -23,7 +23,7 @@ def get_brand_by_id(brand_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/brands", response_model=BrandResponseSchema)
-def created_brand(brand: BrandCreateSchema, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def create_brand(brand: BrandCreateSchema, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
