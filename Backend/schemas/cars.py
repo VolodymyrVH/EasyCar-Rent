@@ -9,6 +9,10 @@ class CarStatus(str, Enum):
     SERVICE = "SERVICE"
 
 
+class CarStatusUpdateSchema(BaseModel):
+    status: CarStatus
+
+
 class BrandCreateSchema(BaseModel):
     name: str = Field(min_length=1, max_length=100)
 
