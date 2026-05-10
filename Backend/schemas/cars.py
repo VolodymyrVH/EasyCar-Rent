@@ -147,7 +147,6 @@ class CarResponseSchema(BaseModel):
     
 class CarImageCreateSchema(BaseModel):
     car_id: int
-    image_url: str = Field(min_length=1, max_length=500)
     is_primary: bool = False
 
 

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Car Images</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; max-width: 520px; margin: 40px auto; padding: 0 1rem; }
+    .section { border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem; }
+    .section-title { font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; margin-bottom: 1rem; }
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    label { font-size: 13px; color: #666; }
+    input { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; }
+    button { width: 100%; padding: 9px; font-size: 14px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; margin-top: 6px; }
+    button:hover { background: #f5f5f5; }
+    .msg { margin-top: 10px; padding: 10px; border-radius: 6px; font-size: 13px; display: none; word-break: break-all; white-space: pre-wrap; }
+    .success { background: #e6f4ea; color: #2d7a3a; display: block !important; }
+    .error { background: #fdecea; color: #c0392b; display: block !important; }
+    .images { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    .images img { width: 150px; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0; }
+    .token-display { font-size: 11px; color: #888; word-break: break-all; margin-top: 6px; background: #f5f5f5; padding: 6px 8px; border-radius: 4px; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Логін -->
+  <div class="section">
+    <div class="section-title">1. Логін</div>
+    <div class="field"><label>Email</label><input type="email" id="login_email" placeholder="admin@example.com" /></div>
+    <div class="field"><label>Пароль</label><input type="password" id="login_password" /></div>
+    <button onclick="login()">Увійти</button>
+    <div class="token-display" id="token_display"></div>
+    <div class="msg" id="login_msg"></div>
+  </div>
+
+  <!-- 2. Завантажити зображення -->
+  <div class="section">
+    <div class="section-title">2. Додати зображення до авто</div>
+    <div class="field"><label>Car ID</label><input type="number" id="car_id" placeholder="1" /></div>
+    <div class="field">
+      <label>Зображення</label>
+      <input type="file" id="image_file" accept="image/*" />
+    </div>
+    <div class="field" style="flex-direction: row; align-items: center; gap: 8px;">
+      <input type="checkbox" id="is_primary" style="width: auto;" />
+      <label for="is_primary">Головне зображення</label>
+    </div>
+    <button onclick="uploadImage()">Завантажити</button>
+    <div class="msg" id="upload_msg"></div>
+  </div>
+
+  <!-- 3. Отримати зображення авто -->
+  <div class="section">
+    <div class="section-title">3. Зображення авто</div>
+    <div class="field"><label>Car ID</label><input type="number" id="get_car_id" placeholder="1" /></div>
+    <button onclick="getImages()">Отримати</button>
+    <div class="msg" id="get_msg"></div>
+    <div class="images" id="images_container"></div>
+  </div>
+
+  <script>
+    const BASE = 'http://localhost:8000';
+    let token = '';
+
+    function showMsg(id, text, isError) {
+      const el = document.getElementById(id);
+      el.className = 'msg ' + (isError ? 'error' : 'success');
+      el.textContent = text;
+    }
+
+    // Логін
+    async function login() {
+      const email = document.getElementById('login_email').value;
+      const password = document.getElementById('login_password').value;
+      try {
+        const res = await fetch(BASE + '/auth/token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'username=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(password)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          token = data.access_token;
+          showMsg('login_msg', 'Токен отримано!', false);
+          const td = document.getElementById('token_display');
+          td.textContent = token;
+          td.style.display = 'block';
+        } else {
+          showMsg('login_msg', 'Помилка: ' + JSON.stringify(data.detail), true);
+        }
+      } catch (e) {
+        showMsg('login_msg', 'Не вдалось підключитись', true);
+      }
+    }
+
+    // Завантажити зображення
+    // ВАЖЛИВО: для файлів використовуємо FormData, не JSON
+    async function uploadImage() {
+      const carId = document.getElementById('car_id').value;
+      const file = document.getElementById('image_file').files[0];
+      const isPrimary = document.getElementById('is_primary').checked;
+
+      if (!file) {
+        showMsg('upload_msg', 'Оберіть файл', true);
+        return;
+      }
+
+      if (!carId) {
+        showMsg('upload_msg', 'Введіть Car ID', true);
+        return;
+    }
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('is_primary', isPrimary);
+
+      try {
+        const res = await fetch(`${BASE}/cars-details/cars/${carId}/images?is_primary=${isPrimary}`, {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          // Content-Type НЕ вказуємо — браузер сам встановить multipart/form-data
+          body: formData
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showMsg('upload_msg', 'Зображення додано!\n' + JSON.stringify(data, null, 2), false);
+        } else {
+          showMsg('upload_msg', 'Помилка: ' + JSON.stringify(data.detail), true);
+        }
+      } catch (e) {
+        showMsg('upload_msg', 'Не вдалось підключитись', true);
+      }
+    }
+
+    // Отримати зображення
+    async function getImages() {
+      const carId = document.getElementById('get_car_id').value;
+      const container = document.getElementById('images_container');
+      container.innerHTML = '';
+
+      try {
+        const res = await fetch(`${BASE}/cars-details/cars/${carId}/images`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data.length === 0) {
+            showMsg('get_msg', 'Зображень немає', true);
+            return;
+          }
+          showMsg('get_msg', `Знайдено ${data.length} зображень`, false);
+          data.forEach(img => {
+            const el = document.createElement('img');
+            el.src = BASE + img.image_url;
+            el.title = img.is_primary ? 'Головне' : '';
+            el.style.border = img.is_primary ? '2px solid #2d7a3a' : '1px solid #e0e0e0';
+            container.appendChild(el);
+          });
+        } else {
+          showMsg('get_msg', 'Помилка: ' + JSON.stringify(data.detail), true);
+        }
+      } catch (e) {
+        showMsg('get_msg', 'Не вдалось підключитись', true);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,10 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from sqlalchemy.orm import Session
 from schemas.cars import BrandResponseSchema, BrandCreateSchema, BrandUpdateSchema, ModelResponseSchema, ModelCreateSchema, ModelUpdateSchema, CarImageResponseSchema, CarImageCreateSchema, CarTagResponseSchema, CarServiceHistoryResponseSchema, CarServiceHistoryCreateSchema, CarServiceHistoryUpdateSchema
 from models.cars import Brand, Model, CarImage, Car, Tag, CarTag, CarServiceHistory
 from models.users import User, UserRole
 from core.database import get_db
 from api.auth import get_current_user
+import os
+import shutil
 
 router = APIRouter(prefix="/cars-details", tags=["cars-details"])
 
@@ -155,28 +157,42 @@ def delete_model(model_id: int, db: Session = Depends(get_db), current_user: Use
     db.commit()
 
 
+@router.get("/cars/{car_id}/images", response_model=list[CarImageResponseSchema])
+def get_car_images(car_id: int, db: Session = Depends(get_db)):
+    car_db = db.query(Car).filter(Car.id == car_id).first()
+    if not car_db:
+        raise HTTPException(status_code=404, detail="Car not found")
+    
+    return db.query(CarImage).filter(CarImage.car_id == car_id).all()
+
+
 @router.post("/cars/{car_id}/images", response_model=CarImageResponseSchema, status_code=201)
-def add_car_image(car_id: int, image: CarImageCreateSchema, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def add_car_image(car_id: int, is_primary: bool = False, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Not enough permissions")
-    
+
     car_db = db.query(Car).filter(Car.id == car_id).first()
     if not car_db:
         raise HTTPException(status_code=404, detail="Car not found")
 
-    if image.is_primary:
+    os.makedirs("static/images/cars", exist_ok=True)
+
+    if is_primary:
         db.query(CarImage).filter(CarImage.car_id == car_id).update({"is_primary": False})
+
+    file_path = f"static/images/cars/{car_id}_{file.filename}"
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
 
     image_db = CarImage(
         car_id=car_id,
-        image_url=image.image_url,
-        is_primary=image.is_primary
+        image_url=f"/{file_path}",
+        is_primary=is_primary
     )
 
     db.add(image_db)
     db.commit()
     db.refresh(image_db)
-
     return image_db
 
 
