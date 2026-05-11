@@ -52,7 +52,8 @@ Every example you can find in index.html (it is genereted by AI with comments)
 If you want add a new user as ADMIN, you will find code in .txt. Just change the id and run the file with "py or python name.py"
 
 CARS
-For cars we have a lot operations. Every function you will find in Swagger. I create car.html file with example how to upload and get images. 
+
+For cars we have a lot operations. Every function you will find in Swagger. I create car.html file with examples. 
 
 
 
