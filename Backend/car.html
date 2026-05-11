@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Cars API</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; max-width: 580px; margin: 30px auto; padding: 0 1rem; background: #fafafa; }
+    h1 { font-size: 18px; margin-bottom: 1.5rem; color: #333; }
+    .section { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
+    .section-title { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem; }
+    .section-desc { font-size: 12px; color: #aaa; margin-bottom: 10px; font-family: monospace; }
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    label { font-size: 13px; color: #666; }
+    input, select { padding: 7px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; background: #fff; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    button { width: 100%; padding: 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; margin-top: 6px; }
+    button:hover { background: #f5f5f5; }
+    button.danger { border-color: #e74c3c; color: #e74c3c; }
+    button.danger:hover { background: #fdecea; }
+    .msg { margin-top: 8px; padding: 8px 10px; border-radius: 6px; font-size: 12px; display: none; word-break: break-all; white-space: pre-wrap; font-family: monospace; }
+    .success { background: #e6f4ea; color: #2d7a3a; display: block !important; }
+    .error { background: #fdecea; color: #c0392b; display: block !important; }
+    .images { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .images img { width: 140px; height: 90px; object-fit: cover; border-radius: 6px; border: 1px solid #e0e0e0; }
+    .images img.primary { border: 2px solid #2d7a3a; }
+    .token-bar { font-size: 11px; color: #aaa; word-break: break-all; margin-top: 6px; background: #f5f5f5; padding: 5px 8px; border-radius: 4px; display: none; }
+    .check-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .check-row input { width: auto; }
+    .check-row label { font-size: 13px; color: #666; margin: 0; }
+  </style>
+</head>
+<body>
+
+<h1>Cars API</h1>
+
+<!-- ============================================================
+  ЛОГІН
+  POST /auth/token
+  Content-Type: application/x-www-form-urlencoded
+  Повертає access_token — зберігається і використовується далі
+============================================================ -->
+<div class="section">
+  <div class="section-title">0. Логін</div>
+  <div class="section-desc">POST /auth/token</div>
+  <div class="field"><label>Email</label><input type="email" id="email" placeholder="admin@example.com" /></div>
+  <div class="field"><label>Пароль</label><input type="password" id="password" /></div>
+  <button onclick="login()">Увійти</button>
+  <div class="token-bar" id="token_bar"></div>
+  <div class="msg" id="login_msg"></div>
+</div>
+
+<!-- ============================================================
+  ОТРИМАТИ ВСІ АВТО
+  GET /cars/?skip=0&limit=100
+  Токен не потрібен
+  Повертає список всіх авто з пагінацією
+============================================================ -->
+<div class="section">
+  <div class="section-title">1. Всі авто</div>
+  <div class="section-desc">GET /cars/?skip=0&limit=100</div>
+  <div class="row">
+    <div class="field"><label>Skip</label><input type="number" id="all_skip" value="0" /></div>
+    <div class="field"><label>Limit</label><input type="number" id="all_limit" value="10" /></div>
+  </div>
+  <button onclick="getCars()">Отримати</button>
+  <div class="msg" id="all_msg"></div>
+</div>
+
+<!-- ============================================================
+  ОТРИМАТИ АВТО ПО ID
+  GET /cars/{car_id}
+  Токен не потрібен
+============================================================ -->
+<div class="section">
+  <div class="section-title">2. Авто по ID</div>
+  <div class="section-desc">GET /cars/{car_id}</div>
+  <div class="field"><label>Car ID</label><input type="number" id="get_car_id" placeholder="1" /></div>
+  <button onclick="getCarById()">Отримати</button>
+  <div class="msg" id="get_car_msg"></div>
+</div>
+
+<!-- ============================================================
+  ФІЛЬТР ПО БРЕНДУ
+  GET /cars/brand/{brand_id}
+  Токен не потрібен
+  Повертає всі авто певного бренду
+============================================================ -->
+<div class="section">
+  <div class="section-title">3. Авто по бренду</div>
+  <div class="section-desc">GET /cars/brand/{brand_id}</div>
+  <div class="field"><label>Brand ID</label><input type="number" id="brand_filter_id" placeholder="1" /></div>
+  <button onclick="getCarsByBrand()">Отримати</button>
+  <div class="msg" id="brand_filter_msg"></div>
+</div>
+
+<!-- ============================================================
+  ФІЛЬТР ПО СТАТУСУ
+  GET /cars/status/{status}
+  Статуси: AVAILABLE, RENTED, SERVICE
+  Токен не потрібен
+============================================================ -->
+<div class="section">
+  <div class="section-title">4. Авто по статусу</div>
+  <div class="section-desc">GET /cars/status/{status}</div>
+  <div class="field">
+    <label>Статус</label>
+    <select id="status_filter">
+      <option value="AVAILABLE">AVAILABLE</option>
+      <option value="RENTED">RENTED</option>
+      <option value="SERVICE">SERVICE</option>
+    </select>
+  </div>
+  <button onclick="getCarsByStatus()">Отримати</button>
+  <div class="msg" id="status_filter_msg"></div>
+</div>
+
+<!-- ============================================================
+  ФІЛЬТР ПО ТИПУ
+  GET /cars/type/{car_type_id}
+  Токен не потрібен
+============================================================ -->
+<div class="section">
+  <div class="section-title">5. Авто по типу</div>
+  <div class="section-desc">GET /cars/type/{car_type_id}</div>
+  <div class="field"><label>Car Type ID</label><input type="number" id="type_filter_id" placeholder="1" /></div>
+  <button onclick="getCarsByType()">Отримати</button>
+  <div class="msg" id="type_filter_msg"></div>
+</div>
+
+<!-- ============================================================
+  СТВОРИТИ АВТО
+  POST /cars/
+  Потрібен токен ADMIN
+  Статус встановлюється автоматично як AVAILABLE
+============================================================ -->
+<div class="section">
+  <div class="section-title">6. Створити авто</div>
+  <div class="section-desc">POST /cars/ — тільки ADMIN</div>
+  <div class="row">
+    <div class="field"><label>Brand ID</label><input type="number" id="c_brand_id" placeholder="1" /></div>
+    <div class="field"><label>Model ID</label><input type="number" id="c_model_id" placeholder="1" /></div>
+  </div>
+  <div class="row3">
+    <div class="field"><label>Car Type ID</label><input type="number" id="c_car_type_id" placeholder="1" /></div>
+    <div class="field"><label>Fuel Type ID</label><input type="number" id="c_fuel_type_id" placeholder="1" /></div>
+    <div class="field"><label>Gearbox ID</label><input type="number" id="c_gearbox_type_id" placeholder="1" /></div>
+  </div>
+  <div class="row">
+    <div class="field"><label>Номер (plate)</label><input type="text" id="c_plate" placeholder="AA1234BB" /></div>
+    <div class="field"><label>Колір</label><input type="text" id="c_color" placeholder="Чорний" /></div>
+  </div>
+  <div class="row3">
+    <div class="field"><label>Місць</label><input type="number" id="c_seats" placeholder="5" /></div>
+    <div class="field"><label>Дверей</label><input type="number" id="c_doors" placeholder="4" /></div>
+    <div class="field"><label>Рік</label><input type="number" id="c_year" placeholder="2022" /></div>
+  </div>
+  <div class="row">
+    <div class="field"><label>Паливо л/км</label><input type="number" id="c_fuel_per_km" placeholder="0.08" step="0.01" /></div>
+    <div class="field"><label>Пробіг (км)</label><input type="number" id="c_mileage" placeholder="0" /></div>
+  </div>
+  <div class="field"><label>Ціна за день (₴)</label><input type="number" id="c_price_per_day" placeholder="1000" /></div>
+  <button onclick="createCar()">Створити</button>
+  <div class="msg" id="create_car_msg"></div>
+</div>
+
+<!-- ============================================================
+  ОНОВИТИ АВТО
+  PATCH /cars/{car_id}
+  Потрібен токен ADMIN
+  Передавай тільки поля які змінюються
+============================================================ -->
+<div class="section">
+  <div class="section-title">7. Оновити авто</div>
+  <div class="section-desc">PATCH /cars/{car_id} — тільки ADMIN</div>
+  <div class="field"><label>Car ID</label><input type="number" id="u_car_id" placeholder="1" /></div>
+  <div class="row">
+    <div class="field"><label>Колір</label><input type="text" id="u_color" placeholder="(необов'язково)" /></div>
+    <div class="field"><label>Ціна за день</label><input type="number" id="u_price_per_day" placeholder="(необов'язково)" /></div>
+  </div>
+  <div class="row">
+    <div class="field"><label>Пробіг</label><input type="number" id="u_mileage" placeholder="(необов'язково)" /></div>
+    <div class="field"><label>Номер (plate)</label><input type="text" id="u_plate" placeholder="(необов'язково)" /></div>
+  </div>
+  <button onclick="updateCar()">Оновити</button>
+  <div class="msg" id="update_car_msg"></div>
+</div>
+
+<!-- ============================================================
+  ЗМІНИТИ СТАТУС АВТО
+  PATCH /cars/{car_id}/status
+  Потрібен токен ADMIN
+  Використовується коли авто здають/повертають або відправляють на сервіс
+============================================================ -->
+<div class="section">
+  <div class="section-title">8. Змінити статус авто</div>
+  <div class="section-desc">PATCH /cars/{car_id}/status — тільки ADMIN</div>
+  <div class="field"><label>Car ID</label><input type="number" id="s_car_id" placeholder="1" /></div>
+  <div class="field">
+    <label>Новий статус</label>
+    <select id="s_status">
+      <option value="AVAILABLE">AVAILABLE</option>
+      <option value="RENTED">RENTED</option>
+      <option value="SERVICE">SERVICE</option>
+    </select>
+  </div>
+  <button onclick="updateCarStatus()">Змінити статус</button>
+  <div class="msg" id="status_msg"></div>
+</div>
+
+<!-- ============================================================
+  ДОДАТИ ЗОБРАЖЕННЯ
+  POST /cars-details/cars/{car_id}/images
+  Потрібен токен ADMIN
+  Файл передається через FormData (multipart/form-data)
+  Content-Type НЕ вказуємо — браузер встановить автоматично
+============================================================ -->
+<div class="section">
+  <div class="section-title">9. Додати зображення</div>
+  <div class="section-desc">POST /cars-details/cars/{car_id}/images — тільки ADMIN</div>
+  <div class="field"><label>Car ID</label><input type="number" id="img_car_id" placeholder="1" /></div>
+  <div class="field"><label>Файл</label><input type="file" id="img_file" accept="image/*" /></div>
+  <div class="check-row">
+    <input type="checkbox" id="img_primary" />
+    <label for="img_primary">Головне зображення</label>
+  </div>
+  <button onclick="uploadImage()">Завантажити</button>
+  <div class="msg" id="img_msg"></div>
+</div>
+
+<!-- ============================================================
+  ОТРИМАТИ ЗОБРАЖЕННЯ АВТО
+  GET /cars-details/cars/{car_id}/images
+  Токен не потрібен
+  Повертає список зображень — зелена рамка = головне
+============================================================ -->
+<div class="section">
+  <div class="section-title">10. Зображення авто</div>
+  <div class="section-desc">GET /cars-details/cars/{car_id}/images</div>
+  <div class="field"><label>Car ID</label><input type="number" id="get_img_car_id" placeholder="1" /></div>
+  <button onclick="getImages()">Отримати</button>
+  <div class="msg" id="get_img_msg"></div>
+  <div class="images" id="images_container"></div>
+</div>
+
+<!-- ============================================================
+  ВИДАЛИТИ АВТО
+  DELETE /cars/{car_id}
+  Потрібен токен ADMIN
+  Повертає 204 No Content — порожня відповідь це норма
+============================================================ -->
+<div class="section">
+  <div class="section-title">11. Видалити авто</div>
+  <div class="section-desc">DELETE /cars/{car_id} — тільки ADMIN</div>
+  <div class="field"><label>Car ID</label><input type="number" id="del_car_id" placeholder="1" /></div>
+  <button class="danger" onclick="deleteCar()">Видалити</button>
+  <div class="msg" id="del_msg"></div>
+</div>
+
+<script>
+  const BASE = 'http://localhost:8000';
+  let token = '';
+
+  // хелпер — заголовки з токеном для JSON запитів
+  function jsonHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+    };
+  }
+
+  // хелпер — заголовки без Content-Type (для FormData/файлів)
+  function authHeaders() {
+    return token ? { 'Authorization': 'Bearer ' + token } : {};
+  }
+
+  function showMsg(id, text, isError) {
+    const el = document.getElementById(id);
+    el.className = 'msg ' + (isError ? 'error' : 'success');
+    el.textContent = typeof text === 'object' ? JSON.stringify(text, null, 2) : text;
+  }
+
+  // POST /auth/token
+  // Content-Type: application/x-www-form-urlencoded (вимога OAuth2)
+  // поле "username" = email
+  async function login() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    try {
+      const res = await fetch(BASE + '/auth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'username=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(password)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        token = data.access_token;
+        showMsg('login_msg', 'Токен отримано!', false);
+        const bar = document.getElementById('token_bar');
+        bar.textContent = token;
+        bar.style.display = 'block';
+      } else {
+        showMsg('login_msg', 'Помилка: ' + JSON.stringify(data.detail), true);
+      }
+    } catch (e) {
+      showMsg('login_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // GET /cars/?skip=0&limit=100
+  // query параметри для пагінації
+  async function getCars() {
+    const skip = document.getElementById('all_skip').value || 0;
+    const limit = document.getElementById('all_limit').value || 10;
+    try {
+      const res = await fetch(`${BASE}/cars/?skip=${skip}&limit=${limit}`);
+      const data = await res.json();
+      if (res.ok) showMsg('all_msg', data, false);
+      else showMsg('all_msg', data.detail, true);
+    } catch (e) {
+      showMsg('all_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // GET /cars/{car_id}
+  async function getCarById() {
+    const id = document.getElementById('get_car_id').value;
+    if (!id) return showMsg('get_car_msg', 'Введіть Car ID', true);
+    try {
+      const res = await fetch(`${BASE}/cars/${id}`);
+      const data = await res.json();
+      if (res.ok) showMsg('get_car_msg', data, false);
+      else showMsg('get_car_msg', data.detail, true);
+    } catch (e) {
+      showMsg('get_car_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // GET /cars/brand/{brand_id}
+  async function getCarsByBrand() {
+    const id = document.getElementById('brand_filter_id').value;
+    if (!id) return showMsg('brand_filter_msg', 'Введіть Brand ID', true);
+    try {
+      const res = await fetch(`${BASE}/cars/brand/${id}`);
+      const data = await res.json();
+      if (res.ok) showMsg('brand_filter_msg', data, false);
+      else showMsg('brand_filter_msg', data.detail, true);
+    } catch (e) {
+      showMsg('brand_filter_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // GET /cars/status/{status}
+  // status — один з: AVAILABLE, RENTED, SERVICE
+  async function getCarsByStatus() {
+    const status = document.getElementById('status_filter').value;
+    try {
+      const res = await fetch(`${BASE}/cars/status/${status}`);
+      const data = await res.json();
+      if (res.ok) showMsg('status_filter_msg', data, false);
+      else showMsg('status_filter_msg', data.detail, true);
+    } catch (e) {
+      showMsg('status_filter_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // GET /cars/type/{car_type_id}
+  async function getCarsByType() {
+    const id = document.getElementById('type_filter_id').value;
+    if (!id) return showMsg('type_filter_msg', 'Введіть Type ID', true);
+    try {
+      const res = await fetch(`${BASE}/cars/type/${id}`);
+      const data = await res.json();
+      if (res.ok) showMsg('type_filter_msg', data, false);
+      else showMsg('type_filter_msg', data.detail, true);
+    } catch (e) {
+      showMsg('type_filter_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // POST /cars/
+  // Content-Type: application/json
+  // статус встановлюється автоматично як AVAILABLE на бекенді
+  async function createCar() {
+    const body = {
+      brand_id: parseInt(document.getElementById('c_brand_id').value),
+      model_id: parseInt(document.getElementById('c_model_id').value),
+      car_type_id: parseInt(document.getElementById('c_car_type_id').value),
+      fuel_type_id: parseInt(document.getElementById('c_fuel_type_id').value),
+      gearbox_type_id: parseInt(document.getElementById('c_gearbox_type_id').value),
+      plate: document.getElementById('c_plate').value,
+      color: document.getElementById('c_color').value,
+      seats: parseInt(document.getElementById('c_seats').value),
+      doors: parseInt(document.getElementById('c_doors').value),
+      year: parseInt(document.getElementById('c_year').value),
+      fuel_per_km: parseFloat(document.getElementById('c_fuel_per_km').value),
+      mileage: parseInt(document.getElementById('c_mileage').value),
+      price_per_day: parseFloat(document.getElementById('c_price_per_day').value),
+    };
+    try {
+      const res = await fetch(`${BASE}/cars/`, {
+        method: 'POST',
+        headers: jsonHeaders(),
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (res.ok) showMsg('create_car_msg', data, false);
+      else showMsg('create_car_msg', data.detail, true);
+    } catch (e) {
+      showMsg('create_car_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // PATCH /cars/{car_id}
+  // передаємо тільки поля які змінились (exclude_unset на бекенді)
+  async function updateCar() {
+    const id = document.getElementById('u_car_id').value;
+    if (!id) return showMsg('update_car_msg', 'Введіть Car ID', true);
+    const body = {};
+    const color = document.getElementById('u_color').value;
+    const price = document.getElementById('u_price_per_day').value;
+    const mileage = document.getElementById('u_mileage').value;
+    const plate = document.getElementById('u_plate').value;
+    if (color) body.color = color;
+    if (price) body.price_per_day = parseFloat(price);
+    if (mileage) body.mileage = parseInt(mileage);
+    if (plate) body.plate = plate;
+    try {
+      const res = await fetch(`${BASE}/cars/${id}`, {
+        method: 'PATCH',
+        headers: jsonHeaders(),
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (res.ok) showMsg('update_car_msg', data, false);
+      else showMsg('update_car_msg', data.detail, true);
+    } catch (e) {
+      showMsg('update_car_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // PATCH /cars/{car_id}/status
+  // окремий ендпоінт для зміни статусу авто
+  // використовується при оренді, поверненні або відправці на сервіс
+  async function updateCarStatus() {
+    const id = document.getElementById('s_car_id').value;
+    if (!id) return showMsg('status_msg', 'Введіть Car ID', true);
+    const status = document.getElementById('s_status').value;
+    try {
+      const res = await fetch(`${BASE}/cars/${id}/status`, {
+        method: 'PATCH',
+        headers: jsonHeaders(),
+        body: JSON.stringify({ status })
+      });
+      const data = await res.json();
+      if (res.ok) showMsg('status_msg', data, false);
+      else showMsg('status_msg', data.detail, true);
+    } catch (e) {
+      showMsg('status_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // POST /cars-details/cars/{car_id}/images
+  // ВАЖЛИВО: файл передається через FormData
+  // Content-Type НЕ вказуємо — браузер сам встановить multipart/form-data з boundary
+  // is_primary передається як query параметр
+  async function uploadImage() {
+    const carId = document.getElementById('img_car_id').value;
+    if (!carId) return showMsg('img_msg', 'Введіть Car ID', true);
+    const file = document.getElementById('img_file').files[0];
+    if (!file) return showMsg('img_msg', 'Оберіть файл', true);
+    const isPrimary = document.getElementById('img_primary').checked;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(`${BASE}/cars-details/cars/${carId}/images?is_primary=${isPrimary}`, {
+        method: 'POST',
+        headers: authHeaders(), // без Content-Type!
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok) showMsg('img_msg', data, false);
+      else showMsg('img_msg', data.detail, true);
+    } catch (e) {
+      showMsg('img_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // GET /cars-details/cars/{car_id}/images
+  // повертає список зображень авто
+  // зелена рамка = головне зображення (is_primary: true)
+  async function getImages() {
+    const carId = document.getElementById('get_img_car_id').value;
+    if (!carId) return showMsg('get_img_msg', 'Введіть Car ID', true);
+    const container = document.getElementById('images_container');
+    container.innerHTML = '';
+    try {
+      const res = await fetch(`${BASE}/cars-details/cars/${carId}/images`);
+      const data = await res.json();
+      if (res.ok) {
+        if (data.length === 0) return showMsg('get_img_msg', 'Зображень немає', true);
+        showMsg('get_img_msg', `Знайдено ${data.length} зображень`, false);
+        data.forEach(img => {
+          const el = document.createElement('img');
+          el.src = BASE + img.image_url;
+          el.title = `ID: ${img.id} | ${img.is_primary ? 'Головне' : ''}`;
+          if (img.is_primary) el.classList.add('primary');
+          container.appendChild(el);
+        });
+      } else {
+        showMsg('get_img_msg', data.detail, true);
+      }
+    } catch (e) {
+      showMsg('get_img_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // DELETE /cars/{car_id}
+  // повертає 204 No Content — тіло відповіді порожнє, не робимо res.json()
+  async function deleteCar() {
+    const id = document.getElementById('del_car_id').value;
+    if (!id) return showMsg('del_msg', 'Введіть Car ID', true);
+    if (!confirm(`Видалити авто #${id}?`)) return;
+    try {
+      const res = await fetch(`${BASE}/cars/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      if (res.status === 204) showMsg('del_msg', `Авто #${id} видалено`, false);
+      else {
+        const data = await res.json();
+        showMsg('del_msg', data.detail, true);
+      }
+    } catch (e) {
+      showMsg('del_msg', 'Не вдалось підключитись', true);
+    }
+  }
+</script>
+</body>
+</html>

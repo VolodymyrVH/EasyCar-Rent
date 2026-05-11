@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from contextlib import asynccontextmanager
 
-from core.database import init_db, get_db
-from api import auth, users
+from core.database import init_db
+from api import auth, users, cars, cars_details, cars_filters
 
 from models.users import *
 from models.cars import *
@@ -20,9 +21,6 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-app.include_router(auth.router)
-app.include_router(users.router)
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://127.0.0.1:5500"],
@@ -30,6 +28,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(cars.router)
+app.include_router(cars_details.router)
+app.include_router(cars_filters.router)
 
 @app.get("/")
 def read_root():
