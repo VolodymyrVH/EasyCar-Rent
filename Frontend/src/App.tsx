@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Register } from './pages/register/Register';
+import { Login } from './pages/login/Login';
+import { CarPage } from './pages/CarPage/CarPage';
 import { Catalog } from './pages/catalog/Catalog';
 
 function App() {
   // тимчасовий стан для навігації register або catalog
-  const [currentPage, setCurrentPage] = useState<'register' | 'catalog'>('register');
+  const [currentPage, setCurrentPage] = useState<'register' | 'catalog' | 'login' | 'car'>('car');
 
   return (
     <>
@@ -35,6 +37,34 @@ function App() {
           Реєстрація
         </button>
         <button 
+          onClick={() => setCurrentPage('login')}
+          style={{
+            padding: '8px 16px',
+            background: currentPage === 'login' ? '#5BA3FF' : '#374151',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+        }}
+  >
+  Логін
+</button>
+        <button 
+          onClick={() => setCurrentPage('car')}
+          style={{
+            padding: '8px 16px',
+            background: currentPage === 'car' ? '#5BA3FF' : '#374151',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 'bold'
+    }}
+  >
+  Авто
+  </button>
+        <button 
           onClick={() => setCurrentPage('catalog')}
           style={{
             padding: '8px 16px',
@@ -50,7 +80,10 @@ function App() {
         </button>
       </div>
 
-      {currentPage === 'register' ? <Register /> : <Catalog />}
+      {currentPage === 'register' && <Register />}
+      {currentPage === 'catalog' && <Catalog />}
+      {currentPage === 'login' && <Login />}
+      {currentPage === 'car' && <CarPage />}
     </>
   );
 }

@@ -1,0 +1,41 @@
+/* Використовуємо той самий імпорт шрифтів */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+/* Header, body та .form-card, .form-grid, .form-title, .submit-btn 
+   автоматично успадкують стилі, якщо вони визначені глобально або в окремих файлах.
+   Тут додаємо лише унікальні для логіну класи: */
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -10px;
+}
+
+.forgot-link {
+  color: #1679FF;
+  font-size: 14px;
+  text-decoration: none;
+  font-family: 'Roboto', sans-serif;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.form-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  font-family: 'Roboto', sans-serif;
+  color: #666;
+}
+
+.form-footer a {
+  color: #1679FF;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
+}
