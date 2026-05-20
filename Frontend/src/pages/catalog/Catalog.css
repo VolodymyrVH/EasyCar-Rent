@@ -5,14 +5,7 @@
     min-height: 100vh;
     width: 100%;
     font-family: 'Roboto', sans-serif;
-}
-
-.catalog-header {
-    background: white;
-    height: 120px;
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid #E5E7EB;
+    padding-top: 5px; 
 }
 
 .catalog-main {
@@ -23,13 +16,19 @@
 .catalog-container {
     max-width: 1420px;
     margin: 0 auto;
-    padding: 10px 20px 40px;
+    padding: 0px 20px 40px; 
 }
+
 
 .filters-bar {
     display: flex;
     align-items: center;
     background: white;
+    
+    max-width: 1420px;
+    width: 100%;
+    height: 65px; 
+    
     padding: 10px 25px;
     border-radius: 16px;
     border: 1px solid #E5E7EB;
@@ -45,9 +44,15 @@
 .filter-item {
     background: none;
     border: none;
-    color: #111827;
-    font-size: 14px;
-    font-weight: 400;
+    
+    /* Параметри з вкладки Typography */
+    font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+    font-size: 16px;        
+    font-weight: 400;         
+    color: #000000;          
+    line-height: 1.2; 
+    letter-spacing: 0%;
+    
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -108,14 +113,6 @@
     object-fit: contain;
 }
 
-.dropdown-doors .dropdown-icon,
-.dropdown-seats .dropdown-icon,
-.dropdown-gearbox .dropdown-icon,
-.dropdown-fuel .dropdown-icon {
-    width: 18px; 
-    max-height: 18px;
-}
-
 .range-container {
     margin-left: auto;
     display: flex;
@@ -139,27 +136,83 @@
 
 .car-card {
     background: white;
-    border-radius: 20px;
     border: 1px solid #E5E7EB;
-    padding: 20px 30px 30px 30px; 
+    border-radius: 20px;
+    padding: 25px 30px 25px 30px; 
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
 }
 
-.car-title {
-    font-size: 24px;
+.car-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 12px;
+}
+
+.car-title-link {
+    font-size: 22px;
     font-weight: 700;
-    margin-bottom: 15px;
-    text-transform: uppercase;
-    color: #111827;
+    color: #000226; 
+    margin: 0;
     font-family: 'Montserrat', sans-serif;
+    cursor: pointer;
+    letter-spacing: -0.01em;
+}
+
+.car-header-meta-vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end; 
+    gap: 8px; 
+}
+
+.car-class-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 119px; 
+    height: 26px; 
+    border: 2px solid #000226 !important; 
+    border-radius: 16px; 
+    font-family: 'Montserrat', system-ui, sans-serif;
+    font-size: 16px; 
+    font-weight: 900 !important;
+    color: #000226; 
+    text-transform: none !important; 
+    line-height: 1; 
+    box-sizing: border-box;
+}
+
+.compare-action-btn-under {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 0;
+    margin-right: 4px; 
+}
+
+.compare-action-btn-under img {
+    height: 24px;
+    width: auto;
+    object-fit: contain;
+}
+
+.image-wrapper {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 15px;
 }
 
 .car-image {
     width: 100%;
     height: auto;
-    margin-bottom: 20px;
+    object-fit: contain;
 }
 
 .specs-list {
@@ -187,44 +240,130 @@
     width: auto;
 }
 
-.price-section { width: 100%; }
-
-.table-header {
-    display: flex;
-    justify-content: space-between;
-    font-weight: 700;
-    padding-bottom: 8px;
-    font-size: 15px;
+.price-section-container {
+    width: 100%;
+    margin-bottom: 18px;
 }
 
-.price-row {
+.price-section-header {
     display: flex;
     justify-content: space-between;
-    padding: 10px 0;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: #111827;
+    padding: 0 24px 8px 24px; 
+}
+
+.price-table-rows {
+    display: flex;
+    flex-direction: column;
+}
+
+.price-row-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 11px 24px; 
     border-top: 1px solid #F3F4F6;
+    font-size: 14px;
+    color: #4B5563;
+}
+
+.price-value-font {
+    font-weight: 700; 
+    color: #111827;
     font-size: 15px;
+    letter-spacing: 0.03em; 
 }
 
 .book-btn {
     width: 100%;
-    height: 55px;
+    height: 50px;
     background: #5BA3FF;
     color: white;
     border: none;
     border-radius: 14px;
     font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.book-btn:hover {
+    background: #4092FF;
+}
+
+.clickable { cursor: pointer; }
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: white;
+    width: 650px;
+    padding: 40px;
+    border-radius: 24px;
+    position: relative;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-content h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    margin: 0 0 20px 0;
+    text-align: center;
+}
+
+.modal-divider {
+    border: none;
+    border-top: 1px solid #E5E7EB;
+    margin-bottom: 30px;
+}
+
+.modal-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.modal-grid input {
+    width: 100%;
+    height: 55px;
+    padding: 0 20px;
+    border: 1px solid #D1D5DB;
+    border-radius: 12px;
     font-size: 16px;
-    margin-top: 20px;
+    box-sizing: border-box;
+}
+
+.modal-submit-btn {
+    width: 250px;
+    height: 55px;
+    background: #5BA3FF;
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-weight: 500;
+    font-size: 16px;
+    display: block;
+    margin: 0 auto;
     cursor: pointer;
 }
 
-.load-more-btn {
-    display: block;
-    margin: 40px auto;
-    padding: 12px 35px;
-    border: 1px solid #111827;
-    background: white;
-    border-radius: 12px;
-    font-weight: 500;
+.modal-close-x {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    font-size: 32px;
+    background: none;
+    border: none;
     cursor: pointer;
 }

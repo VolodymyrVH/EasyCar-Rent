@@ -1,0 +1,343 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+.account-page-container {
+    background-color: #F9F9FB;
+    min-height: 100vh;
+    width: 100%;
+    padding: 40px 20px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.account-layout {
+    width: 1096px;       
+    min-height: 701px;  
+    display: flex;
+    gap: 0;          
+    background: white;   
+    border-radius: 16px; 
+    border: 1px solid #E5E7EB;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.05); 
+    overflow: hidden;
+}
+
+.account-sidebar {
+    background: white;
+    width: 320px;
+    min-height: 701px;
+    padding: 35px 25px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    border-right: 1px solid #E5E7EB; 
+}
+
+.user-avatar-block {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #F3F4F6;
+    margin-bottom: 25px;
+}
+
+.avatar-circle {
+    width: 54px;
+    height: 54px;
+    background-color: #0075FF;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+}
+
+.user-meta h3 {
+    margin: 0 0 4px 0;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.user-meta p {
+    margin: 0;
+    font-size: 12px;
+    color: #9CA3AF;
+}
+
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.menu-item-btn {
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #111827;
+    text-align: left;
+    transition: background-color 0.2s;
+}
+
+.menu-item-btn:hover {
+    background-color: #F3F4F6;
+}
+
+.menu-item-btn.active {
+    background-color: #EBF3FF;
+    color: #0075FF;
+}
+
+.menu-btn-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+}
+
+.sidebar-logout-btn {
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    margin-top: auto;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #111827;
+    text-align: left;
+}
+
+.sidebar-logout-btn:hover {
+    color: #FF5B5B;
+}
+
+.account-main-content {
+    background: white;
+    flex-grow: 1;            
+    padding: 40px;           
+    box-sizing: border-box;
+    display: block;          
+}
+
+.account-main-content h2 {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 24px 0;
+    text-align: left;
+}
+
+.profile-content-wrapper-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;              
+    width: 100%;
+}
+
+.info-card-block {
+    background: #FFFFFF;
+    width: 645px;            
+    height: 161px;          
+    border: 1px solid #B3B3B3; 
+    border-radius: 8px;     
+    padding: 24px 30px;     
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.info-card-row {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 20px;
+    width: 100%;
+}
+
+.info-cell {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.cell-label {
+    font-size: 13px;
+    color: #9CA3AF;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.cell-value {
+    font-size: 15px;
+    color: #111827;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.cell-value-sub {
+    font-size: 14px;
+    color: #4B5563;
+    font-weight: 400;
+    margin-top: 2px;
+}
+
+.info-action-cell {
+    position: absolute;
+    bottom: 24px;
+    right: 30px;
+}
+
+.edit-data-link-btn {
+    background: none;
+    border: none;
+    font-family: 'Roboto', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #111827;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+}
+
+.bookings-accordion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 645px;
+}
+
+.booking-accordion-item {
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+    width: 100%;
+}
+
+.accordion-trigger-header {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1fr;
+    align-items: center;
+    padding: 18px 25px;
+    cursor: pointer;
+}
+
+.booking-car-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.booking-date-range {
+    font-size: 14px;
+    color: #4B5563;
+}
+
+.accordion-right-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 15px;
+}
+
+.status-badge-lbl {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    color: white;
+}
+
+.status-badge-lbl.active-status { background-color: #00CC24; }
+.status-badge-lbl.completed-status { background-color: #C1C1C1; }
+
+.arrow-toggle-icon {
+    font-size: 10px;
+    color: #111827;
+}
+
+.accordion-dropdown-body {
+    border-top: 1px solid #F3F4F6;
+    padding: 25px;
+}
+
+.booking-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr 1.5fr;
+    gap: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #F3F4F6;
+}
+
+.details-column { display: flex; flex-direction: column; }
+.details-label { font-size: 13px; color: #111827; font-weight: 700; margin-bottom: 8px; }
+.details-value { font-size: 14px; color: #4B5563; }
+.details-subvalue { font-size: 13px; color: #9CA3AF; margin-top: 2px; }
+.booking-total-price-row { padding-top: 15px; font-size: 15px; }
+
+.empty-bookings-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 645px;
+    padding-top: 100px;
+    box-sizing: border-box;
+}
+
+.empty-title {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 10px 0;
+}
+
+.empty-desc {
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    color: #9CA3AF;
+    margin: 0 0 30px 0;
+}
+
+.account-redirect-catalog-btn {
+    width: 210px;
+    height: 48px;
+    background: #5BA3FF;
+    color: white;
+    border: none;
+    border-radius: 14px;
+    font-family: 'Roboto', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.account-redirect-catalog-btn:hover {
+    background-color: #4092FF;
+}

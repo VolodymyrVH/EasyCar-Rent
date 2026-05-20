@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { Logo } from '../../components/Logo';
+import { useState, useEffect, useMemo } from 'react';
 import './Catalog.css';
 import carImg from '../../assets/skoda.png';
+import compareIcon from '../../assets/compare.png'; 
+import type { Car } from '../../types';
+import { BookingModal } from '../../components/BookingModal/BookingModal'; 
 
 import doorsIcon from '../../assets/doors.png';
 import seatsIcon from '../../assets/seats.png';
@@ -29,59 +31,111 @@ import brSkoda from '../../assets/filter/brands/skoda.png';
 import brToyota from '../../assets/filter/brands/toyota.png';
 import brVw from '../../assets/filter/brands/volkswagen.png';
 
+interface CatalogProps {
+  onViewCar: (car: Car) => void;
+  onAddToCompare: (car: Car) => void;
+}
+
 interface FilterOption {
   label: string;
-  icon: string;
+  icon?: string;
+  value: string | number;
 }
 
 interface FilterData {
   [key: string]: FilterOption[];
 }
 
-export const Catalog = () => {
+export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const cars = [1, 2, 3]; 
+  const [allCars, setAllCars] = useState<Car[]>([]);
+  
+  const [selectedFilters, setSelectedFilters] = useState<{ [key: string]: (string | number)[] }>({
+    doors: [], seats: [], gearbox: [], fuel: [], brands: [], body: [], carClass: []
+  });
 
-  const toggleFilter = (filterName: string) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [targetCar, setTargetCar] = useState<Car | null>(null);
+
+  useEffect(() => {
+    fetch('http://localhost:8000/cars/')
+      .then((res) => res.json())
+      .then((data) => setAllCars(data))
+      .catch((err) => console.error("Помилка завантаження:", err));
+  }, []);
+
+  const toggleFilterMenu = (filterName: string) => {
     setActiveFilter(activeFilter === filterName ? null : filterName);
   };
 
+  const handleCheckboxChange = (filterId: string, value: string | number) => {
+    setSelectedFilters(prev => {
+      const current = prev[filterId] || [];
+      const next = current.includes(value) 
+        ? current.filter(item => item !== value) 
+        : [...current, value];
+      return { ...prev, [filterId]: next };
+    });
+  };
+
+  const getCarClass = (car: Car) => {
+    if (car.price_per_day > 5000) return 'Преміум';
+    if (car.price_per_day < 1250) return 'Економ';
+    return 'Бізнес';
+  };
+
+  const filteredCars = useMemo(() => {
+    return allCars.filter(car => {
+      if (selectedFilters.gearbox.length > 0) {
+        const gearType = car.gearbox_type_id === 1 ? 'АКПП' : 'МКПП';
+        if (!selectedFilters.gearbox.includes(gearType)) return false;
+      }
+      if (selectedFilters.doors.length > 0 && !selectedFilters.doors.includes(String(car.doors))) return false;
+      if (selectedFilters.seats.length > 0 && !selectedFilters.seats.includes(String(car.seats))) return false;
+      
+      if (selectedFilters.carClass.length > 0) {
+        const currentClass = getCarClass(car);
+        if (!selectedFilters.carClass.includes(currentClass)) return false;
+      }
+      return true;
+    });
+  }, [allCars, selectedFilters]);
+
   const filterData: FilterData = {
-    doors: [{ label: '2', icon: fDoors }, { label: '3', icon: fDoors }, { label: '4', icon: fDoors }, { label: '5', icon: fDoors }],
-    seats: [{ label: '2', icon: fSeats }, { label: '4', icon: fSeats }, { label: '5', icon: fSeats }],
-    gearbox: [{ label: 'АКПП', icon: fGear }, { label: 'МКПП', icon: fGear }],
+    gearbox: [{ label: 'АКПП', icon: fGear, value: 'АКПП' }, { label: 'МКПП', icon: fGear, value: 'МКПП' }],
+    doors: [{ label: '2', icon: fDoors, value: '2' }, { label: '3', icon: fDoors, value: '3' }, { label: '4', icon: fDoors, value: '4' }, { label: '5', icon: fDoors, value: '5' }],
+    seats: [{ label: '2', icon: fSeats, value: '2' }, { label: '4', icon: fSeats, value: '4' }, { label: '5', icon: fSeats, value: '5' }],
+    carClass: [{ label: 'Бізнес', value: 'Бізнес' }, { label: 'Економ', value: 'Економ' }, { label: 'Преміум', value: 'Преміум' }],
     body: [
-      { label: 'Седан', icon: bSedan },
-      { label: 'Купе', icon: bCoupe },
-      { label: 'Універсал', icon: bMinivan },
-      { label: 'Позашляховик', icon: bSuv },
-      { label: 'Хетчбек', icon: bHatch }
+      { label: 'Седан', icon: bSedan, value: 'Sedan' },
+      { label: 'Купе', icon: bCoupe, value: 'Coupe' },
+      { label: 'Універсал', icon: bMinivan, value: 'Minivan' },
+      { label: 'Позашляховик', icon: bSuv, value: 'SUV' },
+      { label: 'Хетчбек', icon: bHatch, value: 'Hatchback' }
     ],
     brands: [
-      { label: 'Toyota', icon: brToyota },
-      { label: 'Volkswagen', icon: brVw },
-      { label: 'Hyundai', icon: brHyundai },
-      { label: 'Renault', icon: brRenault },
-      { label: 'Skoda', icon: brSkoda },
-      { label: 'BMW', icon: brBmw }
+      { label: 'Toyota', icon: brToyota, value: 1 },
+      { label: 'Volkswagen', icon: brVw, value: 2 },
+      { label: 'Hyundai', icon: brHyundai, value: 4 },
+      { label: 'Renault', icon: brRenault, value: 5 },
+      { label: 'Skoda', icon: brSkoda, value: 6 },
+      { label: 'BMW', icon: brBmw, value: 3 }
     ],
-    fuel: [{ label: 'Бензин', icon: fFuel }, { label: 'Дизель', icon: fFuel }],
-    price: [{ label: '0-50$', icon: '' }, { label: '51-100$', icon: '' }, { label: '101-150$', icon: '' }, { label: '151-200$', icon: '' }]
+    fuel: [{ label: 'Бензин', icon: fFuel, value: 'Petrol' }, { label: 'Дизель', icon: fFuel, value: 'Diesel' }],
   };
 
   const filterList = [
+    { id: 'gearbox', title: 'КПП' },
     { id: 'doors', title: 'Кількість дверей' },
     { id: 'seats', title: 'Кількість місць' },
-    { id: 'gearbox', title: 'КПП' },
+    { id: 'carClass', title: 'Класс авто' },
     { id: 'body', title: 'Кузов' },
     { id: 'brands', title: 'Марка авто' },
     { id: 'fuel', title: 'Тип палива' },
-    { id: 'price', title: 'Ціна за день' },
   ];
 
   return (
     <div className="catalog-page">
-      <header className="catalog-header"><Logo /></header>
       <main className="catalog-main">
         <div className="catalog-container">
           <div className="filters-bar">
@@ -89,15 +143,20 @@ export const Catalog = () => {
               <div className="filter-wrapper" key={f.id}>
                 <button 
                   className={`filter-item ${activeFilter === f.id ? 'active' : ''}`} 
-                  onClick={() => toggleFilter(f.id)}
+                  onClick={() => toggleFilterMenu(f.id)}
                 >
                    {f.title} ▾
                 </button>
                 {activeFilter === f.id && (
                   <div className={`dropdown-menu dropdown-${f.id}`}>
-                    {filterData[f.id].map((opt) => (
-                      <label key={opt.label} className="dropdown-item">
-                        <input type="checkbox" className="custom-checkbox" />
+                    {filterData[f.id]?.map((opt) => (
+                      <label key={String(opt.value)} className="dropdown-item">
+                        <input 
+                          type="checkbox" 
+                          className="custom-checkbox" 
+                          checked={selectedFilters[f.id]?.includes(opt.value) || false}
+                          onChange={() => handleCheckboxChange(f.id, opt.value)}
+                        />
                         <span className="dropdown-text">{opt.label}</span>
                         {opt.icon && <img src={opt.icon} alt="" className="dropdown-icon" />}
                       </label>
@@ -114,34 +173,78 @@ export const Catalog = () => {
           </div>
 
           <div className="cars-grid">
-            {cars.map((_, index) => (
-              <div key={index} className="car-card">
-                <h2 className="car-title">SKODA KODIAQ</h2>
-                <div className="image-wrapper"><img src={carImg} alt="" className="car-image" /></div>
-                <div className="specs-list">
-                  <div className="spec-tag"><img src={seatsIcon} alt="" /> 5</div>
-                  <div className="spec-tag"><img src={gearboxIcon} alt="" /> M</div>
-                  <div className="spec-tag"><img src={fuelIcon} alt="" /> 8.5\100 км</div>
-                  <div className="spec-tag"><img src={motorIcon} alt="" /> 2.0</div>
-                  <div className="spec-tag"><img src={caryearIcon} alt="" /> 2022</div>
-                  <div className="spec-tag"><img src={mileageIcon} alt="" /> 20183</div>
-                  <div className="spec-tag"><img src={doorsIcon} alt="" /> 5</div>
-                </div>
-                <div className="price-section">
-                  <div className="table-header"><span>Діб</span><span>Ціна\д</span></div>
-                  <div className="price-table">
-                    <div className="price-row"><span>1 - 3</span> <span>90$</span></div>
-                    <div className="price-row"><span>4 - 9</span> <span>80$</span></div>
-                    <div className="price-row"><span>10 - 20</span> <span>50$</span></div>
+            {filteredCars.map((car) => {
+              const currentClass = getCarClass(car);
+              return (
+                <div key={car.id} className="car-card">
+                  <div className="car-card-header">
+                    <h2 className="car-title-link" onClick={() => onViewCar(car)}>SKODA KODIAQ</h2>
+                    
+                    <div className="car-header-meta-vertical">
+                      <span className="car-class-badge">{currentClass}</span>
+                      <button 
+                        className="compare-action-btn-under" 
+                        onClick={(e) => {
+                          e.stopPropagation(); 
+                          onAddToCompare(car);
+                        }}
+                      >
+                        <img src={compareIcon} alt="Compare" />
+                      </button>
+                    </div>
                   </div>
+
+                  <div className="image-wrapper clickable" onClick={() => onViewCar(car)}>
+                    <img src={carImg} alt="" className="car-image" />
+                  </div>
+                  
+                  <div className="specs-list">
+                    <div className="spec-tag"><img src={seatsIcon} alt="" /> {car.seats}</div>
+                    <div className="spec-tag"><img src={gearboxIcon} alt="" /> {car.gearbox_type_id === 1 ? 'A' : 'M'}</div>
+                    <div className="spec-tag"><img src={fuelIcon} alt="" /> {car.fuel_per_km} л</div>
+                    <div className="spec-tag"><img src={motorIcon} alt="" /> 2.0</div>
+                    <div className="spec-tag"><img src={caryearIcon} alt="" /> {car.year}</div>
+                    <div className="spec-tag"><img src={mileageIcon} alt="" /> {car.mileage}</div>
+                    <div className="spec-tag"><img src={doorsIcon} alt="" /> {car.doors}</div>
+                  </div>
+                  
+                  <div className="price-section-container">
+                    <div className="price-section-header">
+                      <span>Діб</span>
+                      <span>Ціна\д</span>
+                    </div>
+                    <div className="price-table-rows">
+                      <div className="price-row-item">
+                        <span>1 - 3</span> 
+                        <span className="price-value-font">{car.price_per_day}₴</span>
+                      </div>
+                      <div className="price-row-item">
+                        <span>4 - 9</span> 
+                        <span className="price-value-font">{(car.price_per_day * 0.9).toFixed(0)}₴</span>
+                      </div>
+                      <div className="price-row-item">
+                        <span>10 - 20</span> 
+                        <span className="price-value-font">{(car.price_per_day * 0.7).toFixed(0)}₴</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button className="book-btn" onClick={() => { setTargetCar(car); setIsModalOpen(true); }}>
+                    Забронювати
+                  </button>
                 </div>
-                <button className="book-btn">Забронювати</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          <button className="load-more-btn">Більше авто...</button>
+          {filteredCars.length === 0 && <p style={{textAlign: 'center', marginTop: '40px'}}>Машин з такими параметрами не знайдено.</p>}
         </div>
       </main>
+
+      <BookingModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        carName={targetCar ? "SKODA KODIAQ" : "Car"} 
+      />
     </div>
   );
 };

@@ -1,13 +1,21 @@
 export interface Car {
   id: number;
-  brand: string;
-  model: string;
-  price_per_day: number;
-  year: number;
-  fuel_type: string;
-  transmission: string;
-  image_url: string;
+  brand_id: number;
+  model_id: number;
+  status: string;
+  car_type_id: number;
+  fuel_type_id: number;
+  gearbox_type_id: number;
+  plate: string;
   seats: number;
+  doors: number;
+  color: string;
+  fuel_per_km: number;
+  mileage: number;
+  year: number;
+  price_per_day: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface User {
