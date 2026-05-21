@@ -12,11 +12,75 @@ from api.auth import get_current_user
 router = APIRouter(prefix="/payments", tags=["payments"])
 
 
+@router.get("/methods", response_model=list[PaymentMethodResponseSchema])
+def get_payment_methods(db: Session = Depends(get_db)):
+    return db.query(PaymentMethod).all()
+
+
+@router.post("/methods", response_model=PaymentMethodResponseSchema, status_code=201)
+def create_payment_method(data: PaymentMethodCreateSchema, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    existing = db.query(PaymentMethod).filter(PaymentMethod.name == data.name).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Payment method already exists")
+
+    method = PaymentMethod(**data.model_dump())
+    db.add(method)
+    db.commit()
+    db.refresh(method)
+    return method
+
+
+@router.patch("/methods/{method_id}", response_model=PaymentMethodResponseSchema)
+def update_payment_method(method_id: int, data: PaymentMethodUpdateSchema, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    method = db.query(PaymentMethod).filter(PaymentMethod.id == method_id).first()
+    if not method:
+        raise HTTPException(status_code=404, detail="Payment method not found")
+
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(method, field, value)
+
+    db.commit()
+    db.refresh(method)
+    return method
+
+
+@router.delete("/methods/{method_id}", status_code=204)
+def delete_payment_method(method_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+
+    method = db.query(PaymentMethod).filter(PaymentMethod.id == method_id).first()
+    if not method:
+        raise HTTPException(status_code=404, detail="Payment method not found")
+
+    db.delete(method)
+    db.commit()
+
+
 @router.get("/", response_model=list[PaymentResponseSchema])
 def get_all_payments(skip: int = 0, limit: int = 100, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     return db.query(Payment).offset(skip).limit(limit).all()
+
+
+@router.get("/rental/{rental_id}", response_model=list[PaymentResponseSchema])
+def get_payments_by_rental(rental_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    rental = db.query(Rental).filter(Rental.id == rental_id).first()
+    if not rental:
+        raise HTTPException(status_code=404, detail="Rental not found")
+    
+    if current_user.role != UserRole.ADMIN and rental.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    
+    return db.query(Payment).filter(Payment.rental_id == rental_id).all()
 
 
 @router.get("/{payment_id}", response_model=PaymentResponseSchema)
@@ -30,18 +94,6 @@ def get_payment_by_id(payment_id: int, db: Session = Depends(get_db), current_us
         raise HTTPException(status_code=403, detail="Not enough permissions")
     
     return payment
-
-
-@router.get("/rental/{rental_id}", response_model=list[PaymentResponseSchema])
-def get_payments_by_rental(rental_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    rental = db.query(Rental).filter(Rental.id == rental_id).first()
-    if not rental:
-        raise HTTPException(status_code=404, detail="Rental not found")
-    
-    if current_user.role != UserRole.ADMIN and rental.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-    
-    return db.query(Payment).filter(Payment.rental_id == rental_id).all()
 
 
 @router.post("/", response_model=PaymentResponseSchema, status_code=201)
@@ -70,7 +122,6 @@ def create_payment(data: PaymentCreateSchema, db: Session = Depends(get_db), cur
     db.add(payment)
     db.commit()
     db.refresh(payment)
-    
     return payment
 
 
@@ -90,59 +141,4 @@ def update_payment_status(payment_id: int, data: PaymentStatusUpdateSchema, db: 
 
     db.commit()
     db.refresh(payment)
-
     return payment
-
-
-@router.get("/methods/", response_model=list[PaymentMethodResponseSchema])
-def get_payment_methods(db: Session = Depends(get_db)):
-    return db.query(PaymentMethod).all()
-
-
-@router.post("/methods/", response_model=PaymentMethodResponseSchema, status_code=201)
-def create_payment_method(data: PaymentMethodCreateSchema, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-
-    existing = db.query(PaymentMethod).filter(PaymentMethod.name == data.name).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Payment method already exists")
-
-    method = PaymentMethod(**data.model_dump())
-    db.add(method)
-    db.commit()
-    db.refresh(method)
-
-    return method
-
-
-@router.patch("/methods/{method_id}", response_model=PaymentMethodResponseSchema)
-def update_payment_method(method_id: int, data: PaymentMethodUpdateSchema, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-
-    method = db.query(PaymentMethod).filter(PaymentMethod.id == method_id).first()
-    if not method:
-        raise HTTPException(status_code=404, detail="Payment method not found")
-
-    update_data = data.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(method, field, value)
-
-    db.commit()
-    db.refresh(method)
-
-    return method
-
-
-@router.delete("/methods/{method_id}", status_code=204)
-def delete_payment_method(method_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if current_user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Not enough permissions")
-
-    method = db.query(PaymentMethod).filter(PaymentMethod.id == method_id).first()
-    if not method:
-        raise HTTPException(status_code=404, detail="Payment method not found")
-
-    db.delete(method)
-    db.commit()

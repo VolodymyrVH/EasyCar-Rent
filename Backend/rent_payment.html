@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Payments API</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: sans-serif; max-width: 580px; margin: 30px auto; padding: 0 1rem; background: #fafafa; }
+    h1 { font-size: 18px; margin-bottom: 1.5rem; color: #333; }
+    .section { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; }
+    .section-title { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem; }
+    .section-desc { font-size: 12px; color: #aaa; margin-bottom: 10px; font-family: monospace; }
+    .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+    label { font-size: 13px; color: #666; }
+    input, select { padding: 7px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; width: 100%; background: #fff; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    button { width: 100%; padding: 8px; font-size: 13px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; margin-top: 6px; }
+    button:hover { background: #f5f5f5; }
+    button.danger { border-color: #e74c3c; color: #e74c3c; }
+    button.danger:hover { background: #fdecea; }
+    .msg { margin-top: 8px; padding: 8px 10px; border-radius: 6px; font-size: 12px; display: none; word-break: break-all; white-space: pre-wrap; font-family: monospace; }
+    .success { background: #e6f4ea; color: #2d7a3a; display: block !important; }
+    .error { background: #fdecea; color: #c0392b; display: block !important; }
+    .token-bar { font-size: 11px; color: #aaa; word-break: break-all; margin-top: 6px; background: #f5f5f5; padding: 5px 8px; border-radius: 4px; display: none; }
+  </style>
+</head>
+<body>
+
+<h1>Payments API</h1>
+
+<!-- ============================================================
+  ЛОГІН
+============================================================ -->
+<div class="section">
+  <div class="section-title">0. Логін</div>
+  <div class="section-desc">POST /auth/token</div>
+  <div class="field"><label>Email</label><input type="email" id="email" placeholder="admin@example.com" /></div>
+  <div class="field"><label>Пароль</label><input type="password" id="password" /></div>
+  <button onclick="login()">Увійти</button>
+  <div class="token-bar" id="token_bar"></div>
+  <div class="msg" id="login_msg"></div>
+</div>
+
+<!-- ============================================================
+  ПЛАТІЖНІ МЕТОДИ
+============================================================ -->
+
+<!-- 1. Отримати всі методи оплати -->
+<div class="section">
+  <div class="section-title">1. Методи оплати</div>
+  <div class="section-desc">GET /payments/methods — публічно</div>
+  <button onclick="getPaymentMethods()">Отримати методи</button>
+  <div class="msg" id="methods_msg"></div>
+</div>
+
+<!-- 2. Створити метод оплати -->
+<div class="section">
+  <div class="section-title">2. Створити метод оплати</div>
+  <div class="section-desc">POST /payments/methods — тільки ADMIN</div>
+  <div class="field"><label>Назва методу</label><input type="text" id="c_method_name" placeholder="Кредитна карта" /></div>
+  <button onclick="createPaymentMethod()">Створити</button>
+  <div class="msg" id="c_method_msg"></div>
+</div>
+
+<!-- 3. Оновити метод оплати -->
+<div class="section">
+  <div class="section-title">3. Оновити метод оплати</div>
+  <div class="section-desc">PATCH /payments/methods/{method_id} — тільки ADMIN</div>
+  <div class="row">
+    <div class="field"><label>Method ID</label><input type="number" id="u_method_id" placeholder="1" /></div>
+    <div class="field"><label>Нова назва</label><input type="text" id="u_method_name" placeholder="(необов'язково)" /></div>
+  </div>
+  <button onclick="updatePaymentMethod()">Оновити</button>
+  <div class="msg" id="u_method_msg"></div>
+</div>
+
+<!-- 4. Видалити метод оплати -->
+<div class="section">
+  <div class="section-title">4. Видалити метод оплати</div>
+  <div class="section-desc">DELETE /payments/methods/{method_id} — тільки ADMIN</div>
+  <div class="field"><label>Method ID</label><input type="number" id="del_method_id" placeholder="1" /></div>
+  <button class="danger" onclick="deletePaymentMethod()">Видалити</button>
+  <div class="msg" id="del_method_msg"></div>
+</div>
+
+<!-- ============================================================
+  ПЛАТЕЖІ
+============================================================ -->
+
+<!-- 5. Отримати все платежі -->
+<div class="section">
+  <div class="section-title">5. Всі платежі</div>
+  <div class="section-desc">GET /payments/ — тільки ADMIN</div>
+  <div class="row">
+    <div class="field"><label>Skip</label><input type="number" id="all_skip" value="0" /></div>
+    <div class="field"><label>Limit</label><input type="number" id="all_limit" value="10" /></div>
+  </div>
+  <button onclick="getAllPayments()">Отримати</button>
+  <div class="msg" id="all_msg"></div>
+</div>
+
+<!-- 6. Отримати платіж по ID -->
+<div class="section">
+  <div class="section-title">6. Платіж по ID</div>
+  <div class="section-desc">GET /payments/{payment_id}</div>
+  <div class="field"><label>Payment ID</label><input type="number" id="get_payment_id" placeholder="1" /></div>
+  <button onclick="getPaymentById()">Отримати</button>
+  <div class="msg" id="get_payment_msg"></div>
+</div>
+
+<!-- 7. Платежі по оренді -->
+<div class="section">
+  <div class="section-title">7. Платежі по оренді</div>
+  <div class="section-desc">GET /payments/rental/{rental_id}</div>
+  <div class="field"><label>Rental ID</label><input type="number" id="rental_id" placeholder="1" /></div>
+  <button onclick="getPaymentsByRental()">Отримати</button>
+  <div class="msg" id="rental_payments_msg"></div>
+</div>
+
+<!-- 8. Створити платіж -->
+<div class="section">
+  <div class="section-title">8. Створити платіж</div>
+  <div class="section-desc">POST /payments/ — transaction_id генерується автоматично</div>
+  <div class="row">
+    <div class="field"><label>Rental ID</label><input type="number" id="c_rental_id" placeholder="1" /></div>
+    <div class="field"><label>Метод оплати ID</label><input type="number" id="c_method_id" placeholder="1" /></div>
+  </div>
+  <div class="row">
+    <div class="field">
+      <label>Тип платежу</label>
+      <select id="c_payment_type">
+        <option value="PAYMENT">PAYMENT</option>
+        <option value="REFUND">REFUND</option>
+      </select>
+    </div>
+    <div class="field"><label>Сума (₴)</label><input type="number" id="c_amount" placeholder="1500" step="0.01" /></div>
+  </div>
+  <button onclick="createPayment()">Створити</button>
+  <div class="msg" id="c_payment_msg"></div>
+</div>
+
+<!-- 9. Змінити статус платежу -->
+<div class="section">
+  <div class="section-title">9. Змінити статус платежу</div>
+  <div class="section-desc">PATCH /payments/{payment_id}/status — тільки ADMIN, при COMPLETED встановлюється paid_at</div>
+  <div class="row">
+    <div class="field"><label>Payment ID</label><input type="number" id="s_payment_id" placeholder="1" /></div>
+    <div class="field">
+      <label>Новий статус</label>
+      <select id="s_status">
+        <option value="PENDING">PENDING</option>
+        <option value="COMPLETED">COMPLETED</option>
+        <option value="FAILED">FAILED</option>
+      </select>
+    </div>
+  </div>
+  <button onclick="updatePaymentStatus()">Змінити</button>
+  <div class="msg" id="s_payment_msg"></div>
+</div>
+
+<script>
+  const BASE = 'http://localhost:8000';
+  let token = '';
+
+  function jsonHeaders() {
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+    };
+  }
+
+  function showMsg(id, text, isError) {
+    const el = document.getElementById(id);
+    el.className = 'msg ' + (isError ? 'error' : 'success');
+    el.textContent = typeof text === 'object' ? JSON.stringify(text, null, 2) : text;
+  }
+
+  // POST /auth/token
+  async function login() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    try {
+      const res = await fetch(BASE + '/auth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'username=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(password)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        token = data.access_token;
+        showMsg('login_msg', 'Токен отримано!', false);
+        const bar = document.getElementById('token_bar');
+        bar.textContent = token;
+        bar.style.display = 'block';
+      } else {
+        showMsg('login_msg', 'Помилка: ' + JSON.stringify(data.detail), true);
+      }
+    } catch (e) {
+      showMsg('login_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // GET /payments/methods
+  async function getPaymentMethods() {
+    try {
+      const res = await fetch(BASE + '/payments/methods');
+      const data = await res.json();
+      if (res.ok) showMsg('methods_msg', data, false);
+      else showMsg('methods_msg', data.detail, true);
+    } catch (e) {
+      showMsg('methods_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // POST /payments/methods
+  async function createPaymentMethod() {
+    const name = document.getElementById('c_method_name').value;
+    if (!name) return showMsg('c_method_msg', 'Введіть назву методу', true);
+    try {
+      const res = await fetch(BASE + '/payments/methods', {
+        method: 'POST',
+        headers: jsonHeaders(),
+        body: JSON.stringify({ name })
+      });
+      const data = await res.json();
+      if (res.ok) showMsg('c_method_msg', data, false);
+      else showMsg('c_method_msg', data.detail, true);
+    } catch (e) {
+      showMsg('c_method_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // PATCH /payments/methods/{method_id}
+  async function updatePaymentMethod() {
+    const id = document.getElementById('u_method_id').value;
+    if (!id) return showMsg('u_method_msg', 'Введіть Method ID', true);
+    const name = document.getElementById('u_method_name').value;
+    const body = {};
+    if (name) body.name = name;
+    try {
+      const res = await fetch(`${BASE}/payments/methods/${id}`, {
+        method: 'PATCH',
+        headers: jsonHeaders(),
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (res.ok) showMsg('u_method_msg', data, false);
+      else showMsg('u_method_msg', data.detail, true);
+    } catch (e) {
+      showMsg('u_method_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // DELETE /payments/methods/{method_id}
+  async function deletePaymentMethod() {
+    const id = document.getElementById('del_method_id').value;
+    if (!id) return showMsg('del_method_msg', 'Введіть Method ID', true);
+    if (!confirm('Видалити метод оплати #' + id + '?')) return;
+    try {
+      const res = await fetch(`${BASE}/payments/methods/${id}`, {
+        method: 'DELETE',
+        headers: jsonHeaders()
+      });
+      if (res.status === 204) showMsg('del_method_msg', 'Метод видалено', false);
+      else {
+        const data = await res.json();
+        showMsg('del_method_msg', data.detail, true);
+      }
+    } catch (e) {
+      showMsg('del_method_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // GET /payments/
+  async function getAllPayments() {
+    const skip = document.getElementById('all_skip').value || 0;
+    const limit = document.getElementById('all_limit').value || 10;
+    try {
+      const res = await fetch(`${BASE}/payments/?skip=${skip}&limit=${limit}`, {
+        headers: jsonHeaders()
+      });
+      const data = await res.json();
+      if (res.ok) showMsg('all_msg', data, false);
+      else showMsg('all_msg', data.detail, true);
+    } catch (e) {
+      showMsg('all_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // GET /payments/{payment_id}
+  async function getPaymentById() {
+    const id = document.getElementById('get_payment_id').value;
+    if (!id) return showMsg('get_payment_msg', 'Введіть Payment ID', true);
+    try {
+      const res = await fetch(`${BASE}/payments/${id}`, { headers: jsonHeaders() });
+      const data = await res.json();
+      if (res.ok) showMsg('get_payment_msg', data, false);
+      else showMsg('get_payment_msg', data.detail, true);
+    } catch (e) {
+      showMsg('get_payment_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // GET /payments/rental/{rental_id}
+  async function getPaymentsByRental() {
+    const id = document.getElementById('rental_id').value;
+    if (!id) return showMsg('rental_payments_msg', 'Введіть Rental ID', true);
+    try {
+      const res = await fetch(`${BASE}/payments/rental/${id}`, { headers: jsonHeaders() });
+      const data = await res.json();
+      if (res.ok) showMsg('rental_payments_msg', data, false);
+      else showMsg('rental_payments_msg', data.detail, true);
+    } catch (e) {
+      showMsg('rental_payments_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // POST /payments/
+  async function createPayment() {
+    const rentalId = parseInt(document.getElementById('c_rental_id').value);
+    const methodId = parseInt(document.getElementById('c_method_id').value);
+    const paymentType = document.getElementById('c_payment_type').value;
+    const amount = parseFloat(document.getElementById('c_amount').value);
+    if (!rentalId || !methodId || !amount) return showMsg('c_payment_msg', 'Заповни всі поля', true);
+    try {
+      const res = await fetch(BASE + '/payments/', {
+        method: 'POST',
+        headers: jsonHeaders(),
+        body: JSON.stringify({
+          rental_id: rentalId,
+          payment_method_id: methodId,
+          payment_type: paymentType,
+          amount: amount
+        })
+      });
+      const data = await res.json();
+      if (res.ok) showMsg('c_payment_msg', data, false);
+      else showMsg('c_payment_msg', data.detail, true);
+    } catch (e) {
+      showMsg('c_payment_msg', 'Не вдалось підключитись', true);
+    }
+  }
+
+  // PATCH /payments/{payment_id}/status
+  async function updatePaymentStatus() {
+    const id = document.getElementById('s_payment_id').value;
+    if (!id) return showMsg('s_payment_msg', 'Введіть Payment ID', true);
+    const status = document.getElementById('s_status').value;
+    try {
+      const res = await fetch(`${BASE}/payments/${id}/status`, {
+        method: 'PATCH',
+        headers: jsonHeaders(),
+        body: JSON.stringify({ payment_status: status })
+      });
+      const data = await res.json();
+      if (res.ok) showMsg('s_payment_msg', data, false);
+      else showMsg('s_payment_msg', data.detail, true);
+    } catch (e) {
+      showMsg('s_payment_msg', 'Не вдалось підключитись', true);
+    }
+  }
+</script>
+</body>
+</html>

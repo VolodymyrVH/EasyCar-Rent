@@ -56,5 +56,6 @@ CARS
 For cars we have a lot operations. Every function you will find in Swagger. I create car.html file with examples. 
 
 
+RENTAL AND PAYMENTS
 
-Later, I will add rentals and payments.
+We have 2 files for Payment and for Renting. In rent_payment.html you fill find all usage of methods.
