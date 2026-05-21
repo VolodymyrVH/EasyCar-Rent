@@ -38,6 +38,11 @@ def get_by_phone(phone_number: str, db: Session = Depends(get_db), current_user:
     return user_db
 
 
+@router.get("/me", response_model=UserResponseSchema)
+def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
 @router.get("/{user_id}", response_model=UserResponseSchema)
 def get_by_id(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if current_user.role != UserRole.ADMIN:
