@@ -3,7 +3,6 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 from enum import Enum
 
 
-
 class PaymentType(str, Enum):
     PAYMENT = "PAYMENT"
     REFUND = "REFUND"

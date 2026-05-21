@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime, Numeric, Enum, ForeignKey, String, CheckConstraint, Index, func
+from sqlalchemy import Column, Integer, DateTime, Numeric, Enum, ForeignKey, String, CheckConstraint, Index, func, UniqueConstraint
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
 
@@ -56,6 +56,4 @@ class Location(Base):
     __tablename__ = "locations"
 
     id = Column(Integer, primary_key=True)
-    region = Column(String(100), nullable=False)
-    city = Column(String(100), nullable=False)
     address = Column(String(255), nullable=False)
