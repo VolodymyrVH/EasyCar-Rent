@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 
 from core.database import init_db
-from api import auth, users, cars, cars_details, cars_filters
+from api import auth, users, cars, cars_details, cars_filters, rentals, payments
 
 from models.users import *
 from models.cars import *
@@ -37,6 +37,8 @@ app.include_router(users.router)
 app.include_router(cars.router)
 app.include_router(cars_details.router)
 app.include_router(cars_filters.router)
+app.include_router(rentals.router)
+app.include_router(payments.router)
 
 @app.get("/")
 def read_root():
