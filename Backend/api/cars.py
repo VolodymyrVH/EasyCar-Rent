@@ -10,13 +10,6 @@ from models.users import User, UserRole
 router = APIRouter(prefix="/cars", tags=["cars"])
 
 
-#@router.get("/", response_model=list[CarResponseSchema])
-#def get_car_all(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-#    return db.query(Car).offset(skip).limit(limit).all()
-
-
-from sqlalchemy import and_, or_
-
 @router.get("/", response_model=list[CarResponseSchema])
 def get_cars(
     skip: int = 0,
@@ -77,32 +70,6 @@ def get_cars(
     query = query.offset(skip).limit(limit)
     
     return query.all()
-
-#@router.get("/brand/{brand_id}", response_model=list[CarResponseSchema])
-#def get_cars_by_brand(brand_id: int, db: Session = Depends(get_db)):
-#    car_db = db.query(Car).filter(Car.brand_id == brand_id).all()
-#    if not car_db:
-#        raise HTTPException(status_code=404, detail="Car not found")
-    
-#    return car_db
-
-
-#@router.get("/status/{status}", response_model=list[CarResponseSchema])
-#def get_cars_by_status(status: CarStatus, db: Session = Depends(get_db)):
-#    car_db = db.query(Car).filter(Car.status == status).all()
-#    if not car_db:
-#        raise HTTPException(status_code=404, detail="Car not found")
-#    
-#    return car_db
-
-
-#@router.get("/type/{car_type_id}", response_model=list[CarResponseSchema])
-#def get_cars_by_type(car_type_id: int, db: Session = Depends(get_db)):
-#    car_db = db.query(Car).filter(Car.car_type_id == car_type_id).all()
-#    if not car_db:
-#        raise HTTPException(status_code=404, detail="Car not found")
-#    
-#    return car_db
 
 
 @router.get("/{car_id}", response_model=CarResponseSchema)
