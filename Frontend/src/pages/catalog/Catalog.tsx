@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import './Catalog.css';
-import carImg from '../../assets/skoda.png';
+import carImgFallback from '../../assets/skoda.png';
 import compareIcon from '../../assets/compare.png'; 
 import type { Car } from '../../types';
 import { BookingModal } from '../../components/BookingModal/BookingModal'; 
@@ -50,6 +50,11 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [allCars, setAllCars] = useState<Car[]>([]);
   
+  
+  const [brands, setBrands] = useState<{ id: number; name: string }[]>([]);
+  const [models, setModels] = useState<{ id: number; brand_id: number; name: string }[]>([]);
+  const [carImages, setCarImages] = useState<{ [carId: number]: string }>({});
+
   const [selectedFilters, setSelectedFilters] = useState<{ [key: string]: (string | number)[] }>({
     doors: [], seats: [], gearbox: [], fuel: [], brands: [], body: [], carClass: []
   });
@@ -58,11 +63,52 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
   const [targetCar, setTargetCar] = useState<Car | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:8000/cars/')
+    const BASE_URL = 'http://localhost:8000';
+
+    
+    fetch(`${BASE_URL}/cars/`)
       .then((res) => res.json())
-      .then((data) => setAllCars(data))
-      .catch((err) => console.error("Помилка завантаження:", err));
+      .then((data: Car[]) => {
+        setAllCars(data);
+        
+        data.forEach(car => {
+          fetch(`${BASE_URL}/cars-details/cars/${car.id}/images`)
+            .then(res => res.json())
+            .then(imgData => {
+              if (imgData && imgData.length > 0) {
+                const primaryImg = imgData.find((i: any) => i.is_primary) || imgData[0];
+                setCarImages(prev => ({
+                  ...prev,
+                  [car.id]: `${BASE_URL}${primaryImg.image_url}`
+                }));
+              }
+            })
+            .catch(() => {});
+        });
+      })
+      .catch((err) => console.error("Помилка завантаження машин:", err));
+
+    
+    fetch(`${BASE_URL}/cars-details/brands`)
+      .then(res => res.json())
+      .then(data => setBrands(data))
+      .catch(() => {});
+
+    
+    fetch(`${BASE_URL}/cars-details/models`)
+      .then(res => res.json())
+      .then(data => setModels(data))
+      .catch(() => {});
   }, []);
+
+  
+  const getCarFullName = (car: Car) => {
+    const brandObj = brands.find(b => b.id === car.brand_id);
+    const modelObj = models.find(m => m.id === car.model_id);
+    const brandName = brandObj ? brandObj.name.toUpperCase() : 'CAR';
+    const modelName = modelObj ? modelObj.name.toUpperCase() : '';
+    return `${brandName} ${modelName}`.trim();
+  };
 
   const toggleFilterMenu = (filterName: string) => {
     setActiveFilter(activeFilter === filterName ? null : filterName);
@@ -84,6 +130,7 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
     return 'Бізнес';
   };
 
+  
   const filteredCars = useMemo(() => {
     return allCars.filter(car => {
       if (selectedFilters.gearbox.length > 0) {
@@ -97,31 +144,41 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
         const currentClass = getCarClass(car);
         if (!selectedFilters.carClass.includes(currentClass)) return false;
       }
+
+      
+      if (selectedFilters.brands.length > 0 && !selectedFilters.brands.includes(car.brand_id)) return false;
+      if (selectedFilters.body.length > 0 && !selectedFilters.body.includes(car.car_type_id)) return false;
+      if (selectedFilters.fuel.length > 0 && !selectedFilters.fuel.includes(car.fuel_type_id)) return false;
+
       return true;
     });
   }, [allCars, selectedFilters]);
 
+  
   const filterData: FilterData = {
     gearbox: [{ label: 'АКПП', icon: fGear, value: 'АКПП' }, { label: 'МКПП', icon: fGear, value: 'МКПП' }],
     doors: [{ label: '2', icon: fDoors, value: '2' }, { label: '3', icon: fDoors, value: '3' }, { label: '4', icon: fDoors, value: '4' }, { label: '5', icon: fDoors, value: '5' }],
     seats: [{ label: '2', icon: fSeats, value: '2' }, { label: '4', icon: fSeats, value: '4' }, { label: '5', icon: fSeats, value: '5' }],
     carClass: [{ label: 'Бізнес', value: 'Бізнес' }, { label: 'Економ', value: 'Економ' }, { label: 'Преміум', value: 'Преміум' }],
     body: [
-      { label: 'Седан', icon: bSedan, value: 'Sedan' },
-      { label: 'Купе', icon: bCoupe, value: 'Coupe' },
-      { label: 'Універсал', icon: bMinivan, value: 'Minivan' },
-      { label: 'Позашляховик', icon: bSuv, value: 'SUV' },
-      { label: 'Хетчбек', icon: bHatch, value: 'Hatchback' }
+      { label: 'Седан', icon: bSedan, value: 1 },
+      { label: 'Купе', icon: bCoupe, value: 2 },
+      { label: 'Позашляховик', icon: bSuv, value: 3 },
+      { label: 'Універсал', icon: bMinivan, value: 4 },
+      { label: 'Хетчбек', icon: bHatch, value: 5 }
     ],
     brands: [
       { label: 'Toyota', icon: brToyota, value: 1 },
       { label: 'Volkswagen', icon: brVw, value: 2 },
+      { label: 'BMW', icon: brBmw, value: 3 },
       { label: 'Hyundai', icon: brHyundai, value: 4 },
       { label: 'Renault', icon: brRenault, value: 5 },
-      { label: 'Skoda', icon: brSkoda, value: 6 },
-      { label: 'BMW', icon: brBmw, value: 3 }
+      { label: 'Skoda', icon: brSkoda, value: 6 }
     ],
-    fuel: [{ label: 'Бензин', icon: fFuel, value: 'Petrol' }, { label: 'Дизель', icon: fFuel, value: 'Diesel' }],
+    fuel: [
+      { label: 'Бензин', icon: fFuel, value: 1 }, 
+      { label: 'Дизель', icon: fFuel, value: 2 }
+    ],
   };
 
   const filterList = [
@@ -175,10 +232,13 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
           <div className="cars-grid">
             {filteredCars.map((car) => {
               const currentClass = getCarClass(car);
+              const carTitle = getCarFullName(car);
+              const displayImage = carImages[car.id] || carImgFallback;
+
               return (
                 <div key={car.id} className="car-card">
                   <div className="car-card-header">
-                    <h2 className="car-title-link" onClick={() => onViewCar(car)}>SKODA KODIAQ</h2>
+                    <h2 className="car-title-link" onClick={() => onViewCar(car)}>{carTitle}</h2>
                     
                     <div className="car-header-meta-vertical">
                       <span className="car-class-badge">{currentClass}</span>
@@ -195,17 +255,20 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
                   </div>
 
                   <div className="image-wrapper clickable" onClick={() => onViewCar(car)}>
-                    <img src={carImg} alt="" className="car-image" />
+                    <img src={displayImage} alt={carTitle} className="car-image" />
                   </div>
                   
                   <div className="specs-list">
-                    <div className="spec-tag"><img src={seatsIcon} alt="" /> {car.seats}</div>
-                    <div className="spec-tag"><img src={gearboxIcon} alt="" /> {car.gearbox_type_id === 1 ? 'A' : 'M'}</div>
-                    <div className="spec-tag"><img src={fuelIcon} alt="" /> {car.fuel_per_km} л</div>
-                    <div className="spec-tag"><img src={motorIcon} alt="" /> 2.0</div>
-                    <div className="spec-tag"><img src={caryearIcon} alt="" /> {car.year}</div>
-                    <div className="spec-tag"><img src={mileageIcon} alt="" /> {car.mileage}</div>
-                    <div className="spec-tag"><img src={doorsIcon} alt="" /> {car.doors}</div>
+                    <div className="spec-tag"><img src={seatsIcon} alt="" /> {car.seats} місць</div>
+                    <div className="spec-tag">
+                      <img src={gearboxIcon} alt="" /> 
+                      {car.gearbox_type_id === 1 ? 'Автомат (А)' : 'Механіка (М)'}
+                    </div>
+                    <div className="spec-tag"><img src={fuelIcon} alt="" /> {car.fuel_per_km} л/км</div>
+                    <div className="spec-tag"><img src={motorIcon} alt="" /> 2.0 л</div>
+                    <div className="spec-tag"><img src={caryearIcon} alt="" /> {car.year} р.</div>
+                    <div className="spec-tag"><img src={mileageIcon} alt="" /> {car.mileage} км</div>
+                    <div className="spec-tag"><img src={doorsIcon} alt="" /> {car.doors} дв.</div>
                   </div>
                   
                   <div className="price-section-container">
@@ -216,15 +279,15 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
                     <div className="price-table-rows">
                       <div className="price-row-item">
                         <span>1 - 3</span> 
-                        <span className="price-value-font">{car.price_per_day}₴</span>
+                        <span className="price-value-font">{car.price_per_day} ₴</span>
                       </div>
                       <div className="price-row-item">
                         <span>4 - 9</span> 
-                        <span className="price-value-font">{(car.price_per_day * 0.9).toFixed(0)}₴</span>
+                        <span className="price-value-font">{(car.price_per_day * 0.9).toFixed(0)} ₴</span>
                       </div>
                       <div className="price-row-item">
                         <span>10 - 20</span> 
-                        <span className="price-value-font">{(car.price_per_day * 0.7).toFixed(0)}₴</span>
+                        <span className="price-value-font">{(car.price_per_day * 0.7).toFixed(0)} ₴</span>
                       </div>
                     </div>
                   </div>
@@ -240,10 +303,13 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
         </div>
       </main>
 
+      
       <BookingModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
-        carName={targetCar ? "SKODA KODIAQ" : "Car"} 
+        carName={targetCar ? getCarFullName(targetCar) : "Car"} 
+        carId={targetCar ? targetCar.id : 0}
+        pricePerDay={targetCar ? targetCar.price_per_day : 0}
       />
     </div>
   );

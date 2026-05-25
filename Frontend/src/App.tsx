@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Main } from './pages/main/Main'; 
 import { Register } from './pages/register/Register';
 import { Catalog } from './pages/catalog/Catalog';
 import { Login } from './pages/login/Login';
@@ -10,24 +11,28 @@ import type { Car } from './types';
 import './App.css';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'register' | 'catalog' | 'login' | 'account' | 'car-page' | 'compare'>('catalog');
+  
+  const [currentPage, setCurrentPage] = useState<'main' | 'register' | 'catalog' | 'login' | 'account' | 'car-page' | 'compare'>('main');
   const [selectedCarForView, setSelectedCarForView] = useState<Car | null>(null);
   const [compareList, setCompareList] = useState<Car[]>([]);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('token');
+    if (savedToken) {
+      setToken(savedToken);
+    }
+  }, []);
 
   const handleViewCar = (car: Car) => {
     setSelectedCarForView(car);
     setCurrentPage('car-page');
   };
 
-
   const handleAddToCompare = (car: Car) => {
     setCompareList(prev => {
-      if (prev.some(item => item.id === car.id)) {
-        return prev;
-      }
-      if (prev.length >= 3) {
-        return prev;
-      }
+      if (prev.some(item => item.id === car.id)) return prev;
+      if (prev.length >= 3) return prev;
       return [...prev, car];
     });
   };
@@ -40,13 +45,30 @@ function App() {
     setCurrentPage('catalog');
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setCurrentPage('main'); 
+    alert('Ви вийшли з системи');
+  };
+
   return (
     <div className="app-wrapper">
       <header className="main-header">
         <div className="header-container">
           <div className="header-left-block">
-            <Logo />
+            
+            <div onClick={() => setCurrentPage('main')} style={{ cursor: 'pointer' }}>
+              <Logo />
+            </div>
             <nav className="nav-menu">
+              <button 
+                className={currentPage === 'main' ? 'nav-link active' : 'nav-link'} 
+                onClick={() => setCurrentPage('main')}
+              >
+                Головна
+              </button>
+
               <button 
                 className={currentPage === 'catalog' ? 'nav-link active' : 'nav-link'} 
                 onClick={() => setCurrentPage('catalog')}
@@ -67,26 +89,43 @@ function App() {
               >
                 Профіль
               </button>
-              <button 
-                className={currentPage === 'register' ? 'nav-link active' : 'nav-link'} 
-                onClick={() => setCurrentPage('register')}
-              >
-                Реєстрація
-              </button>
-              <button 
-                className={currentPage === 'login' ? 'nav-link active' : 'nav-link'} 
-                onClick={() => setCurrentPage('login')}
-              >
-                Логін
-              </button>
+
+              {!token ? (
+                <>
+                  <button 
+                    className={currentPage === 'register' ? 'nav-link active' : 'nav-link'} 
+                    onClick={() => setCurrentPage('register')}
+                  >
+                    Реєстрація
+                  </button>
+                  <button 
+                    className={currentPage === 'login' ? 'nav-link active' : 'nav-link'} 
+                    onClick={() => setCurrentPage('login')}
+                  >
+                    Логін
+                  </button>
+                </>
+              ) : (
+                <button className="nav-link" onClick={handleLogout}>
+                  Вийти
+                </button>
+              )}
             </nav>
           </div>
         </div>
       </header>
 
       <div className="page-content">
-        {currentPage === 'login' && <Login />}
-        {currentPage === 'register' && <Register />}
+        {currentPage === 'main' && <Main onNavigateToCatalog={handleGoToCatalog} />}
+
+        {currentPage === 'login' && <Login onLoginSuccess={(userToken) => {
+          setToken(userToken);
+          setCurrentPage('catalog');
+        }} />}
+        
+        {currentPage === 'register' && <Register onRegisterSuccess={() => {
+          setCurrentPage('login');
+        }} />}
         
         {currentPage === 'catalog' && (
           <Catalog onViewCar={handleViewCar} onAddToCompare={handleAddToCompare} />

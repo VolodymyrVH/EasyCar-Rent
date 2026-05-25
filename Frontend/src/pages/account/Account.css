@@ -274,6 +274,10 @@
 
 .status-badge-lbl.active-status { background-color: #00CC24; }
 .status-badge-lbl.completed-status { background-color: #C1C1C1; }
+.status-badge-lbl.cancelled-status {
+  background-color: #FDECEA;
+  color: #E74C3C;            
+}
 
 .arrow-toggle-icon {
     font-size: 10px;
