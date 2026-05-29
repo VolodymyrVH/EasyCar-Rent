@@ -17,6 +17,25 @@ export const BookingModal = ({ isOpen, onClose, carName, carId, pricePerDay }: B
   const [totalPrice, setTotalPrice] = useState<number>(0);
   const [daysCount, setDaysCount] = useState<number>(0);
 
+  const [paymentMethods, setPaymentMethods] = useState<{ id: number; name: string }[]>([]);
+  const [selectedMethodId, setSelectedMethodId] = useState<number>(1);
+
+  const BASE_URL = 'http://localhost:8000';
+
+  useEffect(() => {
+    if (isOpen) {
+      fetch(`${BASE_URL}/payments/methods`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            setPaymentMethods(data);
+            setSelectedMethodId(data[0].id);
+          }
+        })
+        .catch(err => console.error(err));
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (startDate && endDate) {
       const start = new Date(startDate);
@@ -53,12 +72,12 @@ export const BookingModal = ({ isOpen, onClose, carName, carId, pricePerDay }: B
 
     const token = localStorage.getItem('token');
     if (!token) {
-      alert('Будь ласка, увійдіть в аккаунт, щоб забронювати автомобіль.');
+      alert('Будь ласка, увійдіть в акаунт для бронювання автомобіля.');
       return;
     }
 
     if (new Date(endDate) <= new Date(startDate)) {
-      alert('Час повернення має бути пізнішим за час подачі автомобіля');
+      alert('Некоректно вказано період оренди.');
       return;
     }
 
@@ -71,8 +90,7 @@ export const BookingModal = ({ isOpen, onClose, carName, carId, pricePerDay }: B
     };
 
     try {
-      
-      const rentalResponse = await fetch('http://localhost:8000/rentals/rentals', {
+      const rentalResponse = await fetch(`${BASE_URL}/rentals/rentals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,12 +105,12 @@ export const BookingModal = ({ isOpen, onClose, carName, carId, pricePerDay }: B
         const paymentData = {
           rental_id: rentalData.id,              
           payment_type: "PAYMENT",                 
-          payment_method_id: 1,                  
+          payment_method_id: selectedMethodId,                  
           amount: rentalData.price_sum          
         };
 
         try {
-          const paymentResponse = await fetch('http://localhost:8000/payments/', {
+          const paymentResponse = await fetch(`${BASE_URL}/payments/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -102,26 +120,25 @@ export const BookingModal = ({ isOpen, onClose, carName, carId, pricePerDay }: B
           });
 
           if (paymentResponse.ok) {
-            alert(`Успіх! Автомобіль ${carName} заброньовано, рахунок на суму ${rentalData.price_sum} ₴ виставлено.`);
+            alert('Автомобіль успішно заброньовано.');
           } else {
-            alert(`Оренда створена, але виникла помилка реєстрації рахунку.`);
+            alert('Бронювання підтверджено, виникла помилка під час формування рахунку.');
           }
         } catch {
-          console.error("Помилка фінансового запиту до бекенду");
+          console.error();
         }
 
-        
         setPickupAddress('');
         setReturnAddress('');
         setStartDate('');
         setEndDate('');
         onClose();
       } else {
-        alert('Помилка бронювання: ' + (rentalData.detail || 'Не вдалося створити оренду.'));
+        alert(rentalData.detail || 'Не вдалося створити бронювання.');
       }
     } catch (err) {
       console.error(err);
-      alert('Помилка зв’язку з сервером');
+      alert('Помилка з’язку з сервером.');
     }
   };
 
@@ -184,6 +201,31 @@ export const BookingModal = ({ isOpen, onClose, carName, carId, pricePerDay }: B
             </div>
           </div>
 
+          {paymentMethods.length > 0 && (
+            <div className="input-field-group" style={{ height: '56px' }}>
+              <span className="modal-field-label">Спосіб оплати</span>
+              <select 
+                value={selectedMethodId} 
+                onChange={(e) => setSelectedMethodId(Number(e.target.value))}
+                style={{
+                  width: '100%',
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontFamily: 'Roboto, sans-serif',
+                  fontSize: '14px',
+                  color: '#111827',
+                  marginTop: '2px',
+                  cursor: 'pointer'
+                }}
+              >
+                {paymentMethods.map(method => (
+                  <option key={method.id} value={method.id}>{method.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {daysCount > 0 && (
             <div style={{
               background: '#F3F4F6',
@@ -199,7 +241,7 @@ export const BookingModal = ({ isOpen, onClose, carName, carId, pricePerDay }: B
                 Період оренди: <strong>{daysCount} {daysCount === 1 ? 'доба' : daysCount < 5 ? 'доби' : 'діб'}</strong>
               </span>
               <span style={{ fontSize: '16px', color: '#111827', fontWeight: 700 }}>
-                Попередня вартість: <span style={{ color: '#5BA3FF' }}>{totalPrice} ₴</span>
+                Вартість: <span style={{ color: '#5BA3FF' }}>{totalPrice} ₴</span>
               </span>
             </div>
           )}

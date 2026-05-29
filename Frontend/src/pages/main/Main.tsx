@@ -1,6 +1,5 @@
 import './Main.css';
 
-
 import mainBg from '../../assets/mainpage/mainpage.png';
 import bmwLogo from '../../assets/mainpage/bmw.png';
 import hyundaiLogo from '../../assets/mainpage/hyundai.png';
@@ -25,8 +24,6 @@ export const Main = ({ onNavigateToCatalog }: MainProps) => {
 
   return (
     <div className="main-page-wrapper">
-      
-
       <section className="hero-section" style={{ backgroundImage: `url(${mainBg})` }}>
         <div className="hero-overlay">
           <div className="hero-container">
@@ -43,7 +40,6 @@ export const Main = ({ onNavigateToCatalog }: MainProps) => {
         </div>
       </section>
 
-
       <section className="brands-section">
         <h2 className="section-title-centered">МАРКИ АВТО</h2>
         <div className="brands-grid">
@@ -55,32 +51,54 @@ export const Main = ({ onNavigateToCatalog }: MainProps) => {
         </div>
       </section>
 
-
       <section className="steps-section">
         <h2 className="section-title-centered-blue">ЛИШЕ <span className="blue-accent-text">3 КРОКИ</span></h2>
         <div className="steps-container">
-          
           <div className="step-card">
             <div className="step-badge">01</div>
             <h3 className="step-card-title">ВИБІР АВТО</h3>
             <p className="step-card-text">Виберіть відповідну модель у каталозі та вкажіть дати оренди.</p>
           </div>
-
           <div className="step-card">
             <div className="step-badge">02</div>
             <h3 className="step-card-title">ДАНІ</h3>
             <p className="step-card-text">Заповніть коротку форму та підтвердіть бронювання.</p>
           </div>
-
           <div className="step-card">
             <div className="step-badge">03</div>
             <h3 className="step-card-title">ОТРИМАННЯ</h3>
             <p className="step-card-text">Зустрічайте авто в потрібному місці і вирушайте в дорогу.</p>
           </div>
-
         </div>
       </section>
 
+      {/* НОВА СЕКЦІЯ */}
+      <section className="analytics-section">
+        <h2 className="section-title-centered">Аналітика EasyCar</h2>
+        <div className="analytics-container">
+          <div className="stat-card">
+            <span className="stat-value">1240+</span>
+            <span className="stat-label">Успішних оренд</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-value">98%</span>
+            <span className="stat-label">Задоволених клієнтів</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-value">450+</span>
+            <span className="stat-label">Авто в парку</span>
+          </div>
+        </div>
+        <div className="chart-preview-box">
+          <p className="chart-title">Динаміка зростання бронювань</p>
+          <div className="chart-line">
+            <div className="line-fill"></div>
+          </div>
+          <div className="chart-labels">
+            <span>Січ</span><span>Бер</span><span>Трав</span><span>Лип</span>
+          </div>
+        </div>
+      </section>
 
       <section className="about-text-section">
         <div className="about-card-container">
@@ -104,7 +122,6 @@ export const Main = ({ onNavigateToCatalog }: MainProps) => {
           </div>
         </div>
       </section>
-
     </div>
   );
 };

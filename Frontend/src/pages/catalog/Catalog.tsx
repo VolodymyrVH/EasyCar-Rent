@@ -49,8 +49,6 @@ interface FilterData {
 export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [allCars, setAllCars] = useState<Car[]>([]);
-  
-  
   const [brands, setBrands] = useState<{ id: number; name: string }[]>([]);
   const [models, setModels] = useState<{ id: number; brand_id: number; name: string }[]>([]);
   const [carImages, setCarImages] = useState<{ [carId: number]: string }>({});
@@ -65,12 +63,10 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
   useEffect(() => {
     const BASE_URL = 'http://localhost:8000';
 
-    
     fetch(`${BASE_URL}/cars/`)
       .then((res) => res.json())
       .then((data: Car[]) => {
         setAllCars(data);
-        
         data.forEach(car => {
           fetch(`${BASE_URL}/cars-details/cars/${car.id}/images`)
             .then(res => res.json())
@@ -86,22 +82,19 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
             .catch(() => {});
         });
       })
-      .catch((err) => console.error("Помилка завантаження машин:", err));
+      .catch((err) => console.error(err));
 
-    
     fetch(`${BASE_URL}/cars-details/brands`)
       .then(res => res.json())
       .then(data => setBrands(data))
       .catch(() => {});
 
-    
     fetch(`${BASE_URL}/cars-details/models`)
       .then(res => res.json())
       .then(data => setModels(data))
       .catch(() => {});
   }, []);
 
-  
   const getCarFullName = (car: Car) => {
     const brandObj = brands.find(b => b.id === car.brand_id);
     const modelObj = models.find(m => m.id === car.model_id);
@@ -130,7 +123,6 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
     return 'Бізнес';
   };
 
-  
   const filteredCars = useMemo(() => {
     return allCars.filter(car => {
       if (selectedFilters.gearbox.length > 0) {
@@ -145,7 +137,6 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
         if (!selectedFilters.carClass.includes(currentClass)) return false;
       }
 
-      
       if (selectedFilters.brands.length > 0 && !selectedFilters.brands.includes(car.brand_id)) return false;
       if (selectedFilters.body.length > 0 && !selectedFilters.body.includes(car.car_type_id)) return false;
       if (selectedFilters.fuel.length > 0 && !selectedFilters.fuel.includes(car.fuel_type_id)) return false;
@@ -154,7 +145,23 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
     });
   }, [allCars, selectedFilters]);
 
-  
+  const brandIconMap: { [key: string]: string } = {
+    'TOYOTA': brToyota,
+    'VOLKSWAGEN': brVw,
+    'BMW': brBmw,
+    'HYUNDAI': brHyundai,
+    'RENAULT': brRenault,
+    'SKODA': brSkoda
+  };
+
+  const dynamicBrandsOptions = useMemo(() => {
+    return brands.map(b => ({
+      label: b.name.charAt(0).toUpperCase() + b.name.slice(1).toLowerCase(),
+      icon: brandIconMap[b.name.toUpperCase()] || undefined,
+      value: b.id
+    }));
+  }, [brands]);
+
   const filterData: FilterData = {
     gearbox: [{ label: 'АКПП', icon: fGear, value: 'АКПП' }, { label: 'МКПП', icon: fGear, value: 'МКПП' }],
     doors: [{ label: '2', icon: fDoors, value: '2' }, { label: '3', icon: fDoors, value: '3' }, { label: '4', icon: fDoors, value: '4' }, { label: '5', icon: fDoors, value: '5' }],
@@ -167,14 +174,7 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
       { label: 'Універсал', icon: bMinivan, value: 4 },
       { label: 'Хетчбек', icon: bHatch, value: 5 }
     ],
-    brands: [
-      { label: 'Toyota', icon: brToyota, value: 1 },
-      { label: 'Volkswagen', icon: brVw, value: 2 },
-      { label: 'BMW', icon: brBmw, value: 3 },
-      { label: 'Hyundai', icon: brHyundai, value: 4 },
-      { label: 'Renault', icon: brRenault, value: 5 },
-      { label: 'Skoda', icon: brSkoda, value: 6 }
-    ],
+    brands: dynamicBrandsOptions,
     fuel: [
       { label: 'Бензин', icon: fFuel, value: 1 }, 
       { label: 'Дизель', icon: fFuel, value: 2 }
@@ -239,7 +239,6 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
                 <div key={car.id} className="car-card">
                   <div className="car-card-header">
                     <h2 className="car-title-link" onClick={() => onViewCar(car)}>{carTitle}</h2>
-                    
                     <div className="car-header-meta-vertical">
                       <span className="car-class-badge">{currentClass}</span>
                       <button 
@@ -303,7 +302,6 @@ export const Catalog = ({ onViewCar, onAddToCompare }: CatalogProps) => {
         </div>
       </main>
 
-      
       <BookingModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 

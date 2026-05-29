@@ -27,58 +27,69 @@ export const CarPage = ({ car, onBack, onAddToCompare }: CarPageProps) => {
   const [brandName, setBrandName] = useState('CAR');
   const [modelName, setModelName] = useState('');
   
-  
-  const [imagesList, setImagesList] = useState<string[]>([carImgFallback]);
-  
+  const [primaryImage, setPrimaryImage] = useState<string>(carImgFallback);
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [currentImgIndex, setCurrentImgIndex] = useState<number>(0);
+
+  const [featuresList, setFeaturesList] = useState<string[]>([]);
 
   const BASE_URL = 'http://localhost:8000';
 
   useEffect(() => {
-    
     fetch(`${BASE_URL}/cars-details/brands/${car.brand_id}`)
       .then(res => res.json())
       .then(data => setBrandName(data.name ? data.name.toUpperCase() : 'CAR'))
       .catch(() => {});
 
-    
     fetch(`${BASE_URL}/cars-details/models/${car.model_id}`)
       .then(res => res.json())
       .then(data => setModelName(data.name ? data.name.toUpperCase() : ''))
       .catch(() => {});
 
-    
     fetch(`${BASE_URL}/cars-details/cars/${car.id}/images`)
       .then(res => res.json())
       .then(imgData => {
-        if (imgData && imgData.length > 0) {
+        if (Array.isArray(imgData) && imgData.length > 0) {
+          const primary = imgData.find((i: any) => i.is_primary);
+          const gallery = imgData.filter((i: any) => !i.is_primary);
           
-          const sortedData = [...imgData].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
-          const urls = sortedData.map((img: any) => `${BASE_URL}${img.image_url}`);
-          
-          setImagesList(urls);
-          setCurrentImgIndex(0); 
+          setPrimaryImage(primary ? `${BASE_URL}${primary.image_url}` : carImgFallback);
+          setGalleryImages(gallery.length > 0 ? gallery.map((i: any) => `${BASE_URL}${i.image_url}`) : [carImgFallback]);
         } else {
-          setImagesList([carImgFallback]);
-          setCurrentImgIndex(0);
+          setPrimaryImage(carImgFallback);
+          setGalleryImages([carImgFallback]);
         }
       })
       .catch(() => {
-        setImagesList([carImgFallback]);
-        setCurrentImgIndex(0);
+        setPrimaryImage(carImgFallback);
+        setGalleryImages([carImgFallback]);
+      });
+
+    fetch(`${BASE_URL}/cars/${car.id}`)
+      .then(res => res.json())
+      .then((data: any) => {
+        if (data && data.tags && data.length > 0) {
+          setFeaturesList(data.tags.map((tag: any) => tag.name));
+        } else if (car.tags && car.tags.length > 0) {
+          setFeaturesList(car.tags.map((tag: any) => tag.name));
+        } else {
+          setFeaturesList([]);
+        }
+      })
+      .catch(() => {
+        setFeaturesList([]);
       });
   }, [car]);
 
-  
   const handlePrevImage = () => {
     setCurrentImgIndex((prevIndex) => 
-      prevIndex === 0 ? imagesList.length - 1 : prevIndex - 1
+      prevIndex === 0 ? galleryImages.length - 1 : prevIndex - 1
     );
   };
 
   const handleNextImage = () => {
     setCurrentImgIndex((prevIndex) => 
-      prevIndex === imagesList.length - 1 ? 0 : prevIndex + 1
+      prevIndex === galleryImages.length - 1 ? 0 : prevIndex + 1
     );
   };
 
@@ -91,8 +102,6 @@ export const CarPage = ({ car, onBack, onAddToCompare }: CarPageProps) => {
   const currentClass = getCarClass(car.price_per_day);
   const fullCarTitle = `${brandName} ${modelName}`.trim();
 
-  const activeCarImage = imagesList[currentImgIndex];
-
   const specsList = [
     { icon: blueSeats, label: "Кількість місць", value: `${car.seats} місць` },
     { icon: blueFuel, label: "Тип палива", value: car.fuel_type_id === 1 ? 'Бензин' : 'Дизель' },
@@ -104,20 +113,12 @@ export const CarPage = ({ car, onBack, onAddToCompare }: CarPageProps) => {
     { icon: blueMileage, label: "Пробіг", value: `${car.mileage} км` },
   ];
 
-  const featuresList = [
-    "Android Auto / CarPlay", "Мультифункціональне кермо", "Датчик світла",
-    "Підігрів сидінь", "Панорамний дах", "Адаптивний круїз-контроль",
-    "Задній парктронік", "Контроль сліпих зон", "Система утримання в смузі",
-    "Мультимедійна система з LCD-екраном", "Камера 360°", "Клімат-контроль"
-  ];
-
   return (
     <div className="car-page-container">
       <div className="car-page-layout">
         
         <div className="car-page-left">
-          
-          <div className="car-gallery-wrapper" style={{ backgroundImage: `url(${activeCarImage})` }}>
+          <div className="car-gallery-wrapper" style={{ backgroundImage: `url(${galleryImages[currentImgIndex]})` }}>
             <button className="back-to-catalog-btn" onClick={onBack}>
               ← Назад до каталогу
             </button>
@@ -126,13 +127,11 @@ export const CarPage = ({ car, onBack, onAddToCompare }: CarPageProps) => {
               <p className="car-sub-title">Доступно до бронювання</p>
             </div>
             
-            
             <button className="gallery-arrow left" onClick={handlePrevImage}>‹</button>
             <button className="gallery-arrow right" onClick={handleNextImage}>›</button>
             
-            
             <div className="gallery-dots-nav">
-              {imagesList.map((_, index) => (
+              {galleryImages.map((_, index) => (
                 <span 
                   key={index} 
                   className={`dot ${index === currentImgIndex ? 'active' : ''}`}
@@ -156,17 +155,20 @@ export const CarPage = ({ car, onBack, onAddToCompare }: CarPageProps) => {
             {activeTab === 'desc' ? (
               <div className="description-text">
                 <p><strong>{fullCarTitle}</strong> — комфорт, стиль та абсолютна надійність для будь-яких ваших поїздок.</p>
-                <p>Автомобіль поєднує сучасний ергономічний дизайн, плавний хід та високий уровень безпеки, що робить його чудовим вибором для міського трафіку або тривалих подорожей країною.</p>
+                <p>Автомобіль поєднує сучасний ергономічний дизайн, плавний хід та високий рівень безпеки, що робить його чудовим вибором для міського трафіку або тривалих подорожей країною.</p>
                 <p>Просторий і чистий салон гарантує максимальну зручність як для водія, так і для кожного пасажира.</p>
               </div>
             ) : (
               <div className="features-grid-layout">
-                {featuresList.map((item, index) => (
+                {featuresList.map((item: string, index: number) => (
                   <div key={index} className="feature-checkbox-item">
-                    <img src={checkIcon} alt="Checked" className="checkmark-icon" />
+                    <img src={checkIcon} alt="" className="checkmark-icon" />
                     <span>{item}</span>
                   </div>
                 ))}
+                {featuresList.length === 0 && (
+                  <span style={{ color: '#9CA3AF', fontSize: '14px' }}>Дані про комплектацію відсутні.</span>
+                )}
               </div>
             )}
           </div>
@@ -179,14 +181,13 @@ export const CarPage = ({ car, onBack, onAddToCompare }: CarPageProps) => {
               <div className="side-header-meta">
                 <span className="car-class-badge">{currentClass}</span>
                 <button className="compare-action-btn" onClick={() => onAddToCompare(car)}>
-                  <img src={compareIcon} alt="Compare" />
+                  <img src={compareIcon} alt="" />
                 </button>
               </div>
             </div>
             
-            
             <div className="side-car-mini-img-wrapper">
-              <img src={imagesList[0]} alt={fullCarTitle} style={{ maxWidth: '100%', borderRadius: '12px' }} />
+              <img src={primaryImage} alt={fullCarTitle} style={{ maxWidth: '100%', borderRadius: '12px' }} />
             </div>
 
             <div className="blue-specs-grid-layout">

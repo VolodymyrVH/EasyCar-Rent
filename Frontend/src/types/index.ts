@@ -1,3 +1,8 @@
+export interface CarTag {
+  id: number;
+  name: string;
+}
+
 export interface Car {
   id: number;
   brand_id: number;
@@ -16,6 +21,7 @@ export interface Car {
   price_per_day: number;
   created_at: string;
   updated_at: string;
+  tags?: CarTag[]; 
 }
 
 export interface User {

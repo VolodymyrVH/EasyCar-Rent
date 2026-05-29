@@ -25,6 +25,110 @@ interface BackendBooking {
   return_location_id: number;
 }
 
+const BookingPaymentCard: React.FC<{ rentalId: number; token: string; baseUrl: string }> = ({ rentalId, token, baseUrl }) => {
+  const [payment, setPayment] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPaymentDetails = () => {
+    fetch(`${baseUrl}/payments/rental/${rentalId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPayment(data[0]);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchPaymentDetails();
+  }, [rentalId, token, baseUrl]);
+
+  const handlePayInvoice = async () => {
+    if (!payment) return;
+    try {
+      const response = await fetch(`${baseUrl}/payments/${payment.id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ payment_status: 'COMPLETED' })
+      });
+
+      if (response.ok) {
+        fetchPaymentDetails();
+      } else {
+        alert('Не вдалося виконати трансакцію.');
+      }
+    } catch {
+      alert('Помилка обробки платежу.');
+    }
+  };
+
+  if (loading || !payment) return null;
+
+  const isPaid = payment.payment_status === 'COMPLETED';
+
+  return (
+    <div style={{
+      background: '#F9FAFB',
+      border: '1px dashed #D1D5DB',
+      borderRadius: '12px',
+      padding: '16px',
+      marginTop: '15px',
+      width: '100%',
+      boxSizing: 'border-box',
+      fontFamily: 'sans-serif'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+        <span style={{ color: '#6B7280' }}>ID трансакції:</span>
+        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#374151' }}>{payment.transaction_id.slice(0, 18)}...</span>
+      </div>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: !isPaid ? '14px' : '0' }}>
+        <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>Статус оплати:</span>
+        <span style={{
+          fontSize: '11px',
+          fontWeight: 700,
+          padding: '4px 10px',
+          borderRadius: '20px',
+          color: 'white',
+          backgroundColor: isPaid ? '#00CC24' : '#FF9F43',
+          letterSpacing: '0.05em'
+        }}>
+          {isPaid ? 'ОПЛАЧЕНО' : 'ОЧІКУЄ ОПЛАТИ'}
+        </span>
+      </div>
+
+      {!isPaid && (
+        <button
+          onClick={handlePayInvoice}
+          style={{
+            width: '100%',
+            height: '36px',
+            backgroundColor: '#111827',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'background-color 0.2s'
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#374151')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#111827')}
+        >
+          Оплатити карткою
+        </button>
+      )}
+    </div>
+  );
+};
+
 export const Account = ({ onGoToCatalog }: AccountProps) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'bookings'>('profile');
   const [expandedBooking, setExpandedBooking] = useState<number | null>(null);
@@ -76,7 +180,7 @@ export const Account = ({ onGoToCatalog }: AccountProps) => {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(res => {
-        if (!res.ok) throw new Error("Не вдалося завантажити профіль");
+        if (!res.ok) throw new Error();
         return res.json();
       })
       .then(data => {
@@ -92,7 +196,7 @@ export const Account = ({ onGoToCatalog }: AccountProps) => {
         });
       })
       .catch(() => {
-        console.log("Бекенд недоступний. Працює локальний макет.");
+        console.log();
       });
   };
 
@@ -104,11 +208,12 @@ export const Account = ({ onGoToCatalog }: AccountProps) => {
       .then(res => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setBackendRentals(data);
-          if (data.length > 0 && expandedBooking === null) setExpandedBooking(data[0].id);
+          const myRentals = data.filter((booking) => booking.user_id === userId || userId === 0);
+          setBackendRentals(myRentals);
+          if (myRentals.length > 0 && expandedBooking === null) setExpandedBooking(myRentals[0].id);
         }
       })
-      .catch(err => console.error("Помилка завантаження оренд:", err));
+      .catch(err => console.error(err));
   };
 
   useEffect(() => {
@@ -129,7 +234,7 @@ export const Account = ({ onGoToCatalog }: AccountProps) => {
         }
       })
       .catch(() => {});
-  }, [token]);
+  }, [token, userId]);
 
   const openCancelConfirmation = (rentalId: number) => {
     setSelectedRentalId(rentalId);
@@ -153,11 +258,11 @@ export const Account = ({ onGoToCatalog }: AccountProps) => {
         loadRentals(); 
       } else {
         const errorData = await response.json();
-        alert('Помилка скасування: ' + (errorData.detail || 'Не вдалося скасувати.'));
+        alert(errorData.detail || 'Не вдалося скасувати бронювання.');
       }
     } catch (err) {
       console.error(err);
-      alert('Помилка зв’язку з сервером');
+      alert('Помилка зв’язку з сервером.');
     }
   };
 
@@ -180,12 +285,12 @@ export const Account = ({ onGoToCatalog }: AccountProps) => {
   };
 
   const translateStatus = (status: string) => {
-  switch (status) {
-    case 'ACTIVE': return { text: 'Активна', class: 'active-status' };
-    case 'PENDING': return { text: 'В обробці', class: 'completed-status' };
-    case 'CANCELLED': return { text: 'Скасовано', class: 'cancelled-status' };
-    default: return { text: 'Завершено', class: 'completed-status' };
-  }
+    switch (status) {
+      case 'ACTIVE': return { text: 'Активна', class: 'active-status' };
+      case 'PENDING': return { text: 'В обробці', class: 'completed-status' };
+      case 'CANCELLED': return { text: 'Скасовано', class: 'cancelled-status' };
+      default: return { text: 'Завершено', class: 'completed-status' };
+    }
   };
 
   const formatShortRange = (startStr: string, endStr: string) => {
@@ -240,7 +345,7 @@ export const Account = ({ onGoToCatalog }: AccountProps) => {
             </button>
           </nav>
 
-          <button className="sidebar-logout-btn" onClick={() => alert('Вихід з системи...')}>
+          <button className="sidebar-logout-btn" onClick={() => alert('Завершення сесії...')}>
             <img src={logoutIcon} alt="" className="menu-btn-icon" />
             Вийти
           </button>
@@ -370,26 +475,30 @@ export const Account = ({ onGoToCatalog }: AccountProps) => {
                               </div>
                             </div>
                             
-                            <div className="booking-total-price-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>Вартість оренди: <strong>{booking.price_sum}₴</strong></span>
-                              
-                              {(booking.status === 'PENDING' || booking.status === 'ACTIVE') && (
-                                <button 
-                                  onClick={() => openCancelConfirmation(booking.id)}
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#FF5B5B',
-                                    cursor: 'pointer',
-                                    textDecoration: 'underline',
-                                    fontSize: '14px',
-                                    fontWeight: 500,
-                                    padding: '5px 10px'
-                                  }}
-                                >
-                                  Скасувати бронювання
-                                </button>
-                              )}
+                            <div className="booking-total-price-row" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                <span>Вартість оренди: <strong>{booking.price_sum}₴</strong></span>
+                                
+                                {(booking.status === 'PENDING' || booking.status === 'ACTIVE') && (
+                                  <button 
+                                    onClick={() => openCancelConfirmation(booking.id)}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: '#FF5B5B',
+                                      cursor: 'pointer',
+                                      textDecoration: 'underline',
+                                      fontSize: '14px',
+                                      fontWeight: 500,
+                                      padding: '5px 10px'
+                                    }}
+                                  >
+                                    Скасувати бронювання
+                                  </button>
+                                )}
+                              </div>
+
+                              <BookingPaymentCard rentalId={booking.id} token={token!} baseUrl={BASE_URL} />
                             </div>
                           </div>
                         )}
@@ -406,7 +515,6 @@ export const Account = ({ onGoToCatalog }: AccountProps) => {
         </main>
       </div>
 
-
       <EditProfileModal 
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -422,7 +530,6 @@ export const Account = ({ onGoToCatalog }: AccountProps) => {
         onUpdateSuccess={loadUserProfile}
       />
 
-      
       {isCancelModalOpen && (
         <div className="modal-overlay" onClick={() => setIsCancelModalOpen(false)}>
           <div className="modal-content-clean" style={{ height: 'auto', minHeight: '200px', maxWidth: '400px', padding: '24px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>

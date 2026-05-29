@@ -11,7 +11,6 @@ import type { Car } from './types';
 import './App.css';
 
 function App() {
-  
   const [currentPage, setCurrentPage] = useState<'main' | 'register' | 'catalog' | 'login' | 'account' | 'car-page' | 'compare'>('main');
   const [selectedCarForView, setSelectedCarForView] = useState<Car | null>(null);
   const [compareList, setCompareList] = useState<Car[]>([]);
@@ -57,7 +56,6 @@ function App() {
       <header className="main-header">
         <div className="header-container">
           <div className="header-left-block">
-            
             <div onClick={() => setCurrentPage('main')} style={{ cursor: 'pointer' }}>
               <Logo />
             </div>
@@ -83,12 +81,14 @@ function App() {
                 Порівняння {compareList.length > 0 && `(${compareList.length})`}
               </button>
 
-              <button 
-                className={currentPage === 'account' ? 'nav-link active' : 'nav-link'} 
-                onClick={() => setCurrentPage('account')}
-              >
-                Профіль
-              </button>
+              {token && (
+                <button 
+                  className={currentPage === 'account' ? 'nav-link active' : 'nav-link'} 
+                  onClick={() => setCurrentPage('account')}
+                >
+                  Профіль
+                </button>
+              )}
 
               {!token ? (
                 <>
@@ -131,7 +131,7 @@ function App() {
           <Catalog onViewCar={handleViewCar} onAddToCompare={handleAddToCompare} />
         )}
         
-        {currentPage === 'account' && <Account onGoToCatalog={handleGoToCatalog} />}
+        {currentPage === 'account' && token && <Account onGoToCatalog={handleGoToCatalog} />}
         
         {currentPage === 'compare' && (
           <Compare 
